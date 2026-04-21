@@ -1,0 +1,91 @@
+<resources>
+    <string name="app_name">Adventure</string>
+    <string name="app_name_display">Adventure</string>
+
+    <string name="nav_home">Home</string>
+    <string name="nav_map">Map</string>
+    <string name="nav_settings">Settings</string>
+
+    <string name="tracking_channel_name">Tracking Service</string>
+    <string name="tracking_channel_desc">Records your exploration trail in the background</string>
+    <string name="tracking_notification_title">Adventure is recording</string>
+    <string name="tracking_mode_precise">📍 Precise travel mode running...</string>
+    <string name="tracking_mode_battery">🔋 Battery saver mode running...</string>
+    <string name="tracking_paused_still">💤 Phone is still, location paused (Battery saved)</string>
+
+    <string name="region_not_downloaded">Area not downloaded</string>
+    <string name="state_not_downloaded">State not downloaded</string>
+    <string name="country_not_downloaded">Country not downloaded</string>
+    <string name="unknown">Unknown</string>
+    <string name="unknown_state">Unknown State</string>
+    <string name="toast_tracking_started">Exploration started, recording the fog of world.</string>
+    <string name="toast_permission_required">Location permission is required to explore.</string>
+    <string name="dialog_download_title">Download Area Data</string>
+    <string name="dialog_download_message">Download boundary data for the current city, state, and country? (Overrides old data)</string>
+    <string name="toast_location_unavailable">Unable to get current location</string>
+    <string name="toast_need_location_permission">Location permission required</string>
+    <string name="dialog_confirm">Confirm</string>
+    <string name="dialog_cancel">Cancel</string>
+    <string name="content_desc_update_boundary">Update administrative boundaries</string>
+
+    <string name="tracking_active_title">Exploration Active</string>
+    <string name="tracking_paused_title">Exploration Paused</string>
+    <string name="tracking_switch_desc">When enabled, your trail is recorded in the background</string>
+
+    <string name="accuracy_setting_title">Location Accuracy</string>
+    <string name="accuracy_precise_desc">High accuracy for travel (More battery)</string>
+    <string name="accuracy_battery_desc">Battery saver for commute (Wider range)</string>
+
+    <string name="progress_city_title">City/County Progress</string>
+    <string name="progress_state_title">State/Province Progress</string>
+    <string name="progress_country_title">Country Progress</string>
+    <string name="progress_global_title">Global Land Exploration</string>
+
+    <string name="global_explored_area_label">Total Global Explored Area</string>
+    <string name="local_explored_area_label">Local Explored Area</string>
+    <string name="format_area_km2">%.2f km²</string>
+    <string name="format_progress_global">%.8f%%</string>
+    <string name="format_progress_local">%.4f%%</string>
+
+    <string name="map_title">Exploration Area</string>
+    <string name="toast_searching_gps">Searching for GPS signal...</string>
+    <string name="content_desc_my_location">Back to current location</string>
+    <string name="grid_info_precise">📍 Deeply explored at: %s</string>
+    <string name="grid_info_blurry">🌫️ Passed through here at: %s</string>
+    <string name="time_early_record">Early Record</string>
+
+    <string name="settings_title">Settings</string>
+    <string name="settings_data_management">Data Management</string>
+    <string name="settings_export_title">Export Backup</string>
+    <string name="settings_export_desc">Save Adventure data as a JSON file</string>
+    <string name="toast_export_success">Backup exported successfully!</string>
+    <string name="toast_export_fail">Export failed</string>
+    <string name="settings_import_title">Restore from Backup</string>
+    <string name="settings_import_desc">Import previous JSON backup (overwrites duplicates)</string>
+    <string name="toast_import_success">Successfully imported %d records!</string>
+    <string name="toast_import_fail">Import failed, please check the file</string>
+    <string name="settings_version">Adventure v1.0.0</string>
+    <string name="settings_notifications">Notifications</string>
+    <string name="settings_summary_title">Daily Summary</string>
+    <string name="settings_summary_desc">Receive exploration summary at 21:00 daily</string>
+
+    <string name="summary_channel_name">Daily Summary</string>
+    <string name="summary_channel_desc">Daily exploration report</string>
+    <string name="summary_notif_title">Today\'s Adventure</string>
+    <string name="summary_both">Deeply explored %.2f km² and passed through %.2f km² of new areas!</string>
+    <string name="summary_precise">Deeply explored %.2f km² of new areas!</string>
+    <string name="summary_blurry">Passed through %.2f km² of new areas today!</string>
+    <string name="summary_none">No new exploration today, just an ordinary day.</string>
+
+    <string name="nav_achievement">Achievement</string>
+
+    <string name="achievement_title">Achievements</string>
+    <string name="achievement_empty">No achievements yet. Go explore the world!</string>
+    <string name="achievement_earned_on">Earned on: %s</string>
+    <string name="achievement_tier_1">Bronze</string>
+    <string name="achievement_tier_2">Silver</string>
+    <string name="achievement_tier_3">Gold</string>
+    <string name="achievement_tier_4">Platinum</string>
+    <string name="achievement_tier_5">Onyx</string>
+    <string name="achievement_test_add">Discover a new achievement (Debug)</string>
+</resources>

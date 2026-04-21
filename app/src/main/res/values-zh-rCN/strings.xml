@@ -1,0 +1,91 @@
+<resources>
+    <string name="app_name">世界冒险</string>
+    <string name="app_name_display">世界冒险</string>
+
+    <string name="nav_home">首页</string>
+    <string name="nav_map">地图</string>
+    <string name="nav_settings">设置</string>
+
+    <string name="tracking_channel_name">轨迹记录服务</string>
+    <string name="tracking_channel_desc">用于在后台持续记录你的探索轨迹</string>
+    <string name="tracking_notification_title">世界冒险正在记录</string>
+    <string name="tracking_mode_precise">📍 高精度旅游模式运行中...</string>
+    <string name="tracking_mode_battery">🔋 省电日常模式运行中...</string>
+    <string name="tracking_paused_still">💤 手机静止，定位已休眠 (极致省电)</string>
+
+    <string name="region_not_downloaded">未下载区域</string>
+    <string name="state_not_downloaded">未下载省/州</string>
+    <string name="country_not_downloaded">未下载国家</string>
+    <string name="unknown">未知</string>
+    <string name="unknown_state">未知省/州</string>
+    <string name="toast_tracking_started">探索已开启，正在记录世界冒险</string>
+    <string name="toast_permission_required">必须授予位置权限才能进行探索</string>
+    <string name="dialog_download_title">下载区域数据</string>
+    <string name="dialog_download_message">是否下载当前所在城市、省/州及国家的边界数据？(会覆盖旧数据)</string>
+    <string name="toast_location_unavailable">无法获取当前位置</string>
+    <string name="toast_need_location_permission">需要定位权限</string>
+    <string name="dialog_confirm">确认</string>
+    <string name="dialog_cancel">取消</string>
+    <string name="content_desc_update_boundary">更新行政边界数据</string>
+
+    <string name="tracking_active_title">探索进行中</string>
+    <string name="tracking_paused_title">探索已暂停</string>
+    <string name="tracking_switch_desc">开启后将在后台持续记录你的轨迹</string>
+
+    <string name="accuracy_setting_title">定位精度</string>
+    <string name="accuracy_precise_desc">高精度旅游打卡 (更耗电)</string>
+    <string name="accuracy_battery_desc">省电日常通勤 (范围广)</string>
+
+    <string name="progress_city_title">城市/区县探索进度</string>
+    <string name="progress_state_title">省/州探索进度</string>
+    <string name="progress_country_title">国家探索进度</string>
+    <string name="progress_global_title">全球陆地探索度</string>
+
+    <string name="global_explored_area_label">全球总点亮面积</string>
+    <string name="local_explored_area_label">已点亮局部面积</string>
+    <string name="format_area_km2">%.2f km²</string>
+    <string name="format_progress_global">%.8f%%</string>
+    <string name="format_progress_local">%.4f%%</string>
+
+    <string name="map_title">探索区域</string>
+    <string name="toast_searching_gps">正在搜寻GPS信号...</string>
+    <string name="content_desc_my_location">回到当前位置</string>
+    <string name="grid_info_precise">📍 深度探索于：%s</string>
+    <string name="grid_info_blurry">🌫️ 途经此处于：%s</string>
+    <string name="time_early_record">早期记录</string>
+
+    <string name="settings_title">设置</string>
+    <string name="settings_data_management">数据管理</string>
+    <string name="settings_export_title">导出备份文件</string>
+    <string name="settings_export_desc">将世界冒险数据保存为 JSON 文件</string>
+    <string name="toast_export_success">备份导出成功！</string>
+    <string name="toast_export_fail">导出失败</string>
+    <string name="settings_import_title">从备份恢复</string>
+    <string name="settings_import_desc">导入之前的 JSON 备份文件 (覆盖重复项)</string>
+    <string name="toast_import_success">成功导入 %d 条数据！</string>
+    <string name="toast_import_fail">导入失败，请检查文件</string>
+    <string name="settings_version">世界冒险 v1.0.0</string>
+    <string name="settings_notifications">消息提醒</string>
+    <string name="settings_summary_title">每日探索总结</string>
+    <string name="settings_summary_desc">每天晚上 21 点推送今日的探索成就</string>
+
+    <string name="summary_channel_name">每日总结</string>
+    <string name="summary_channel_desc">每日探索面积报告</string>
+    <string name="summary_notif_title">今日探索成就</string>
+    <string name="summary_both">今天深度探索了 %.2f km²，并途经了 %.2f km² 的全新区域！</string>
+    <string name="summary_precise">深度探索了 %.2f km² 的全新区域！</string>
+    <string name="summary_blurry">今天途经了 %.2f km² 的全新区域！</string>
+    <string name="summary_none">今天没有新的探索, 又是平平无奇的一天。</string>
+
+    <string name="nav_achievement">成就</string>
+
+    <string name="achievement_title">探索成就</string>
+    <string name="achievement_empty">暂无成就，快去探索世界吧！</string>
+    <string name="achievement_earned_on">获得日期：%s</string>
+    <string name="achievement_tier_1">铜牌</string>
+    <string name="achievement_tier_2">银牌</string>
+    <string name="achievement_tier_3">金牌</string>
+    <string name="achievement_tier_4">铂金</string>
+    <string name="achievement_tier_5">黑牌</string>
+    <string name="achievement_test_add">触发一个新成就 (测试)</string>
+</resources>
