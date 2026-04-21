@@ -41,25 +41,6 @@ class AchievementViewModel(private val dao: AchievementDao) : ViewModel() {
                 .sortedByDescending { it.highestAchievement.earnedTime }
         }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
-
-//    // 测试用的方法：随机塞入一个成就
-//    fun addTestAchievement() {
-//        viewModelScope.launch {
-//            val randomLevel = (1..5).random()
-//            val names = listOf("大地漫步者", "像素猎人", "迷雾先锋")
-//            val desc = listOf("累计探索面积", "解锁高精网格", "解锁模糊大网格")
-//
-//            val ach = Achievement(
-//                id = "test_ach_${System.currentTimeMillis()}",
-//                title = names.random(),
-//                description = desc.random() + " 达到等级 $randomLevel",
-//                level = randomLevel,
-//                iconRes = "placeholder",
-//                earnedTime = System.currentTimeMillis() - (0..1000000000).random()
-//            )
-//            dao.insertAchievement(ach)
-//        }
-//    }
 }
 
 class AchievementViewModelFactory(private val dao: AchievementDao) : ViewModelProvider.Factory {

@@ -87,17 +87,23 @@ fun AdventureAppMain(database: AdventureDatabase, preferences: AppPreferences) {
         ) {
             composable(Screen.Home.route) { HomeScreen(viewModel = homeViewModel) }
             composable(Screen.Map.route) { MapScreen(viewModel = mapViewModel) }
+            // 🌟 传接完整的 6 个指标给成就页
             composable(Screen.Achievement.route) {
-                // 🌟 获取当前的实时数据
                 val area by homeViewModel.exploredAreaKm2.collectAsState()
                 val precise by homeViewModel.preciseGrids.collectAsState()
                 val blurry by homeViewModel.blurryGrids.collectAsState()
+                val distance by homeViewModel.totalDistanceKm.collectAsState()
+                val cities by homeViewModel.cityCount.collectAsState()
+                val countries by homeViewModel.countryCount.collectAsState()
 
                 AchievementScreen(
                     viewModel = achievementViewModel,
                     currentArea = area,
+                    currentDistance = distance,
                     currentPreciseCount = precise.size,
-                    currentBlurryCount = blurry.size
+                    currentBlurryCount = blurry.size,
+                    currentCityCount = cities,
+                    currentCountryCount = countries
                 )
             }
             composable(Screen.Settings.route) { SettingsScreen(viewModel = settingsViewModel) }

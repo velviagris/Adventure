@@ -139,7 +139,6 @@ fun HomeScreen(viewModel: HomeViewModel) {
             val json = cityGeoJson!!
             val addressObj = json.optJSONObject("address")
 
-            // 优先提取市级相关的字段
             currentCityName = addressObj?.optString("city")?.takeIf { it.isNotEmpty() }
                 ?: addressObj?.optString("town")?.takeIf { it.isNotEmpty() }
                         ?: addressObj?.optString("municipality")?.takeIf { it.isNotEmpty() }
@@ -148,14 +147,16 @@ fun HomeScreen(viewModel: HomeViewModel) {
                         ?: json.optString("display_name", unknownStr).split(",").firstOrNull()?.trim() ?: unknownStr
 
             withContext(Dispatchers.Default) {
-                // 因为下载的是 Zoom 10 的市级多边形，这里算出来的是市内的总面积
                 val stats = GeoJsonHelper.calculateExplorationStats(blurryGridsList, preciseGridsList, json)
                 cityExploredArea = stats.first
                 if (stats.second > 0) {
                     cityProgress = stats.first / stats.second
                 }
-                // 🌟 把城市记录推送到数据仓库！(2 代表市)
-                viewModel.recordRegionVisit(json, 2, currentCityName, cityExploredArea)
+
+                // 🌟 核心拦截器：如果名字是占位符或未知，坚决不写入数据库！
+                if (currentCityName != unknownStr && currentCityName != context.getString(R.string.region_not_downloaded)) {
+                    viewModel.recordRegionVisit(json, 2, currentCityName, cityExploredArea)
+                }
             }
         }
     }
@@ -176,9 +177,10 @@ fun HomeScreen(viewModel: HomeViewModel) {
                 if (stats.second > 0) {
                     stateProgress = stats.first / stats.second
                 }
-                // 🌟 把国家记录推送到数据仓库！(4 代表国家)
-                viewModel.recordRegionVisit(json, 4, currentCountryName, countryExploredArea)
-            }
+                // 🌟 核心拦截器：如果名字是占位符或未知，坚决不写入数据库！
+                if (currentCityName != unknownStr && currentCityName != context.getString(R.string.region_not_downloaded)) {
+                    viewModel.recordRegionVisit(json, 2, currentCityName, cityExploredArea)
+                }            }
         }
     }
 
@@ -194,6 +196,10 @@ fun HomeScreen(viewModel: HomeViewModel) {
                 countryExploredArea = stats.first
                 if (stats.second > 0) {
                     countryProgress = stats.first / stats.second
+                }
+                // 🌟 拦截占位符
+                if (currentCountryName != unknownStr && currentCountryName != context.getString(R.string.country_not_downloaded)) {
+                    viewModel.recordRegionVisit(json, 4, currentCountryName, countryExploredArea)
                 }
             }
         }

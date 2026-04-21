@@ -102,8 +102,11 @@ data class AchievementViewState(
 fun AchievementScreen(
     viewModel: AchievementViewModel,
     currentArea: Double,
+    currentDistance: Double,       // 🌟 新增
     currentPreciseCount: Int,
-    currentBlurryCount: Int
+    currentBlurryCount: Int,
+    currentCityCount: Int,         // 🌟 新增
+    currentCountryCount: Int       // 🌟 新增
 ) {
     // 拿到数据库里所有已解锁的成就
     val unlockedList by viewModel.groupedAchievements.collectAsState()
@@ -117,6 +120,9 @@ fun AchievementScreen(
                 "area" -> currentArea
                 "precise" -> currentPreciseCount.toDouble()
                 "blurry" -> currentBlurryCount.toDouble()
+                "distance" -> currentDistance
+                "city" -> currentCityCount.toDouble()
+                "country" -> currentCountryCount.toDouble()
                 else -> 0.0
             }
 
