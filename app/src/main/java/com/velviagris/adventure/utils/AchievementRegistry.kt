@@ -1,0 +1,90 @@
+package com.velviagris.adventure.utils
+
+import android.content.Context
+import androidx.annotation.StringRes
+import com.velviagris.adventure.R
+import com.velviagris.adventure.data.Achievement
+
+data class AchievementDef(
+    val categoryId: String,
+    @StringRes val titleResId: Int,
+    @StringRes val unitResId: Int,
+    val thresholds: List<Double>,
+    val tierNameResIds: List<Int>
+)
+
+object AchievementRegistry {
+    val definitions = listOf(
+        AchievementDef(
+            "area", R.string.ach_area_title, R.string.unit_km2,
+            listOf(1.0, 10.0, 100.0, 1000.0, 10000.0),
+            listOf(R.string.ach_area_1, R.string.ach_area_2, R.string.ach_area_3, R.string.ach_area_4, R.string.ach_area_5)
+        ),
+        AchievementDef(
+            "precise", R.string.ach_precise_title, R.string.unit_count,
+            listOf(100.0, 1000.0, 5000.0, 20000.0, 100000.0),
+            listOf(R.string.ach_precise_1, R.string.ach_precise_2, R.string.ach_precise_3, R.string.ach_precise_4, R.string.ach_precise_5)
+        ),
+        AchievementDef(
+            "blurry", R.string.ach_blurry_title, R.string.unit_count,
+            listOf(10.0, 50.0, 200.0, 1000.0, 5000.0),
+            listOf(R.string.ach_blurry_1, R.string.ach_blurry_2, R.string.ach_blurry_3, R.string.ach_blurry_4, R.string.ach_blurry_5)
+        ),
+        AchievementDef(
+            "distance", R.string.ach_dist_title, R.string.unit_km,
+            listOf(10.0, 100.0, 500.0, 2000.0, 10000.0),
+            listOf(R.string.ach_dist_1, R.string.ach_dist_2, R.string.ach_dist_3, R.string.ach_dist_4, R.string.ach_dist_5)
+        ),
+        AchievementDef(
+            "city", R.string.ach_city_title, R.string.unit_count,
+            listOf(1.0, 5.0, 20.0, 100.0, 500.0),
+            listOf(R.string.ach_city_1, R.string.ach_city_2, R.string.ach_city_3, R.string.ach_city_4, R.string.ach_city_5)
+        ),
+        AchievementDef(
+            "country", R.string.ach_country_title, R.string.unit_count,
+            listOf(1.0, 3.0, 10.0, 50.0, 197.0),
+            listOf(R.string.ach_country_1, R.string.ach_country_2, R.string.ach_country_3, R.string.ach_country_4, R.string.ach_country_5)
+        )
+    )
+
+    // ==========================================
+    // 🌟 全自动巡检引擎：不管是在后台走路，还是在导入数据，都只调用这一个方法！
+    // ==========================================
+    suspend fun evaluateAndUnlock(
+        context: Context,
+        metrics: Map<String, Double>,
+        existingIds: Set<String>,
+        unlockAction: suspend (Achievement) -> Unit
+    ) {
+        definitions.forEach { def ->
+            val progress = metrics[def.categoryId] ?: 0.0
+
+            for (lvl in 1..5) {
+                val threshold = def.thresholds[lvl - 1]
+                val achId = "${def.categoryId}_$lvl"
+
+                // 如果达标且未领取
+                if (progress >= threshold && !existingIds.contains(achId)) {
+                    val title = context.getString(def.titleResId)
+                    val tierName = context.getString(def.tierNameResIds[lvl - 1])
+                    val unitStr = context.getString(def.unitResId)
+
+                    val reqStr = if (unitStr == "km²" || unitStr == "km") String.format("%.0f", threshold) else threshold.toInt().toString()
+                    val desc = context.getString(R.string.achievement_desc_format, tierName, reqStr, unitStr)
+
+                    // 触发回调入库
+                    unlockAction(
+                        Achievement(
+                            id = achId,
+                            title = title, // 数据库里依然存完整的字符串，兼容 JSON 备份
+                            description = desc,
+                            level = lvl,
+                            iconRes = achId,
+                            earnedTime = System.currentTimeMillis()
+                        )
+                    )
+                }
+            }
+        }
+    }
+}

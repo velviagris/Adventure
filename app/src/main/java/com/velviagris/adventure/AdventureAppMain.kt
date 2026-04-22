@@ -10,6 +10,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
@@ -30,10 +31,12 @@ sealed class Screen(val route: String, val titleResId: Int, val icon: ImageVecto
 @Composable
 fun AdventureAppMain(database: AdventureDatabase, preferences: AppPreferences) {
     val navController = rememberNavController()
+    val context = LocalContext.current.applicationContext
     val items = listOf(Screen.Home, Screen.Map, Screen.Achievement, Screen.Settings)
 
     val homeViewModel: HomeViewModel = viewModel(
         factory = HomeViewModelFactory(
+            context,
             database.exploredGridDao(),
             preferences,
             database.achievementDao(),

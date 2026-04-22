@@ -88,4 +88,54 @@
     <string name="achievement_tier_4">铂金</string>
     <string name="achievement_tier_5">黑牌</string>
     <string name="achievement_test_add">触发一个新成就 (测试)</string>
+
+    <string name="unit_km2">km²</string>
+    <string name="unit_count">个</string>
+    <string name="unit_km">km</string>
+
+    <string name="achievement_desc_format">%1$s：累计达到 %2$s %3$s</string>
+    <string name="achievement_unlocked">已解锁</string>
+    <string name="achievement_locked">尚未解锁</string>
+
+    <string name="ach_area_title">大地漫步者</string>
+    <string name="ach_area_1">见微知著</string>
+    <string name="ach_area_2">城市游侠</string>
+    <string name="ach_area_3">广阔天地</string>
+    <string name="ach_area_4">洲际旅人</string>
+    <string name="ach_area_5">世界引擎</string>
+
+    <string name="ach_precise_title">像素猎人</string>
+    <string name="ach_precise_1">像素学徒</string>
+    <string name="ach_precise_2">寻迹者</string>
+    <string name="ach_precise_3">细嗅蔷薇</string>
+    <string name="ach_precise_4">全视之眼</string>
+    <string name="ach_precise_5">夸克微雕师</string>
+
+    <string name="ach_blurry_title">迷雾先锋</string>
+    <string name="ach_blurry_1">启程</string>
+    <string name="ach_blurry_2">破雾者</string>
+    <string name="ach_blurry_3">乘风破浪</string>
+    <string name="ach_blurry_4">巡天者</string>
+    <string name="ach_blurry_5">苍穹之影</string>
+
+    <string name="ach_dist_title">行者无疆</string>
+    <string name="ach_dist_1">初识路途</string>
+    <string name="ach_dist_2">百里游侠</string>
+    <string name="ach_dist_3">千里独行</string>
+    <string name="ach_dist_4">万里跋涉</string>
+    <string name="ach_dist_5">夸父追日</string>
+
+    <string name="ach_city_title">地区开拓者</string>
+    <string name="ach_city_1">初来乍到</string>
+    <string name="ach_city_2">走南闯北</string>
+    <string name="ach_city_3">神州漫步</string>
+    <string name="ach_city_4">百县领主</string>
+    <string name="ach_city_5">大旅行家</string>
+
+    <string name="ach_country_title">环球旅行家</string>
+    <string name="ach_country_1">本国居民</string>
+    <string name="ach_country_2">跨越国界</string>
+    <string name="ach_country_3">护照盖满</string>
+    <string name="ach_country_4">四海为家</string>
+    <string name="ach_country_5">地球漫游者</string>
 </resources>

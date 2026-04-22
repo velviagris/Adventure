@@ -88,4 +88,54 @@
     <string name="achievement_tier_4">Platinum</string>
     <string name="achievement_tier_5">Onyx</string>
     <string name="achievement_test_add">Discover a new achievement (Debug)</string>
+
+    <string name="unit_km2">km²</string>
+    <string name="unit_count"> </string>
+    <string name="unit_km">km</string>
+
+    <string name="achievement_desc_format">%1$s: Reached %2$s %3$s</string>
+    <string name="achievement_unlocked">Unlocked</string>
+    <string name="achievement_locked">Locked</string>
+
+    <string name="ach_area_title">Earth Walker</string>
+    <string name="ach_area_1">First Steps</string>
+    <string name="ach_area_2">City Ranger</string>
+    <string name="ach_area_3">Wide World</string>
+    <string name="ach_area_4">Intercontinental</string>
+    <string name="ach_area_5">World Engine</string>
+
+    <string name="ach_precise_title">Pixel Hunter</string>
+    <string name="ach_precise_1">Apprentice</string>
+    <string name="ach_precise_2">Tracker</string>
+    <string name="ach_precise_3">Detail Seeker</string>
+    <string name="ach_precise_4">All-Seeing Eye</string>
+    <string name="ach_precise_5">Quark Sculptor</string>
+
+    <string name="ach_blurry_title">Fog Pioneer</string>
+    <string name="ach_blurry_1">Departure</string>
+    <string name="ach_blurry_2">Fog Breaker</string>
+    <string name="ach_blurry_3">Wind Rider</string>
+    <string name="ach_blurry_4">Sky Cruiser</string>
+    <string name="ach_blurry_5">Firmament Shadow</string>
+
+    <string name="ach_dist_title">Endless Journey</string>
+    <string name="ach_dist_1">First Mile</string>
+    <string name="ach_dist_2">Hundred Miles</string>
+    <string name="ach_dist_3">Lone Wolf</string>
+    <string name="ach_dist_4">Long Trek</string>
+    <string name="ach_dist_5">Sun Chaser</string>
+
+    <string name="ach_city_title">Region Explorer</string>
+    <string name="ach_city_1">Newcomer</string>
+    <string name="ach_city_2">Traveler</string>
+    <string name="ach_city_3">Wanderer</string>
+    <string name="ach_city_4">Hundred Counties</string>
+    <string name="ach_city_5">Grand Voyager</string>
+
+    <string name="ach_country_title">Globetrotter</string>
+    <string name="ach_country_1">Local Resident</string>
+    <string name="ach_country_2">Cross Border</string>
+    <string name="ach_country_3">Passport Filled</string>
+    <string name="ach_country_4">Citizen of Earth</string>
+    <string name="ach_country_5">World Nomad</string>
 </resources>
