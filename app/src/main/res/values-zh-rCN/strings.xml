@@ -138,4 +138,27 @@
     <string name="ach_country_3">护照盖满</string>
     <string name="ach_country_4">四海为家</string>
     <string name="ach_country_5">地球漫游者</string>
+
+    <string name="unit_day">天</string>
+
+    <string name="ach_streak_title">恒心守望</string>
+    <string name="ach_streak_1">初窥门径</string>
+    <string name="ach_streak_2">持之以恒</string>
+    <string name="ach_streak_3">月满之刻</string>
+    <string name="ach_streak_4">百日修行</string>
+    <string name="ach_streak_5">岁月史官</string>
+
+    <string name="ach_newexp_title">开拓狂热</string>
+    <string name="ach_newexp_1">牛刀小试</string>
+    <string name="ach_newexp_2">渐入佳境</string>
+    <string name="ach_newexp_3">探索不息</string>
+    <string name="ach_newexp_4">永无止境</string>
+    <string name="ach_newexp_5">开拓狂魔</string>
+
+    <string name="ach_noexp_title">宅家隐士</string>
+    <string name="ach_noexp_1">短暂休憩</string>
+    <string name="ach_noexp_2">闭门不出</string>
+    <string name="ach_noexp_3">隐居遁世</string>
+    <string name="ach_noexp_4">坐忘禅关</string>
+    <string name="ach_noexp_5">绝世独立</string>
 </resources>

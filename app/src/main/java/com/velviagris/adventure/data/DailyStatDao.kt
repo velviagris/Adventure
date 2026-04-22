@@ -18,6 +18,10 @@ interface DailyStatDao {
     @Query("SELECT SUM(total_distance_km) FROM daily_stats")
     fun getTotalDistanceFlow(): Flow<Double?>
 
+    // 🌟 新增：获取所有日期的统计，按时间倒序排列，供连续天数计算使用
+    @Query("SELECT * FROM daily_stats ORDER BY date_string DESC")
+    fun getAllDailyStatsFlow(): Flow<List<DailyStat>>
+
     // 🌟 用于全库备份
     @Query("SELECT * FROM daily_stats")
     suspend fun getAllDailyStats(): List<DailyStat>

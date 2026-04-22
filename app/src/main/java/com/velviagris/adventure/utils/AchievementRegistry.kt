@@ -44,6 +44,24 @@ object AchievementRegistry {
             "country", R.string.ach_country_title, R.string.unit_count,
             listOf(1.0, 3.0, 10.0, 50.0, 197.0),
             listOf(R.string.ach_country_1, R.string.ach_country_2, R.string.ach_country_3, R.string.ach_country_4, R.string.ach_country_5)
+        ),
+        // 1. 签到牌：恒心守望
+        AchievementDef(
+            "streak_checkin", R.string.ach_streak_title, R.string.unit_day,
+            listOf(3.0, 7.0, 30.0, 100.0, 365.0),
+            listOf(R.string.ach_streak_1, R.string.ach_streak_2, R.string.ach_streak_3, R.string.ach_streak_4, R.string.ach_streak_5)
+        ),
+        // 2. 连续新探索：开拓狂热
+        AchievementDef(
+            "streak_newexp", R.string.ach_newexp_title, R.string.unit_day,
+            listOf(2.0, 5.0, 14.0, 30.0, 100.0),
+            listOf(R.string.ach_newexp_1, R.string.ach_newexp_2, R.string.ach_newexp_3, R.string.ach_newexp_4, R.string.ach_newexp_5)
+        ),
+        // 3. 连续无探索：宅家隐士
+        AchievementDef(
+            "streak_noexp", R.string.ach_noexp_title, R.string.unit_day,
+            listOf(3.0, 7.0, 14.0, 30.0, 100.0),
+            listOf(R.string.ach_noexp_1, R.string.ach_noexp_2, R.string.ach_noexp_3, R.string.ach_noexp_4, R.string.ach_noexp_5)
         )
     )
 

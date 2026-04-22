@@ -125,10 +125,9 @@ class LocationTrackingService : Service() {
     private fun recordDistance(distanceMeters: Float) {
         val dateString = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault()).format(java.util.Date())
         serviceScope.launch {
-            // 取出今天的统计数据，如果没有就新建一个
-            val stat = dailyStatDao.getDailyStat(dateString) ?: DailyStat(dateString = dateString)
-            // 将米转换为千米并累加
+            val stat = dailyStatDao.getDailyStat(dateString) ?: DailyStat(dateString)
             stat.totalDistanceKm += (distanceMeters / 1000.0)
+            stat.isTrackingActive = true // 🌟 只要记录了距离，就算作今日已签到
             dailyStatDao.insertDailyStat(stat)
         }
     }
@@ -201,7 +200,22 @@ class LocationTrackingService : Service() {
             sourceType = 0,
             exploreTime = timeMs
         )
-        serviceScope.launch { database.exploredGridDao().insertGrid(grid) }
+        serviceScope.launch {
+            val dao = database.exploredGridDao()
+
+            // 🌟 判断是否为全新探索！
+            val existing = dao.getGrid(gridIndex)
+            if (existing == null) {
+                // 如果数据库里没有这个格子，说明是全新的！
+                val dateString = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault()).format(java.util.Date(timeMs))
+                val stat = dailyStatDao.getDailyStat(dateString) ?: DailyStat(dateString)
+                stat.newGridsCount += 1
+                stat.isTrackingActive = true
+                dailyStatDao.insertDailyStat(stat)
+            }
+
+            dao.insertGrid(grid)
+        }
     }
 
     private fun updateNotification(text: String) {

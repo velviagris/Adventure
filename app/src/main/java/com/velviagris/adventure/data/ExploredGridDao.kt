@@ -34,4 +34,8 @@ interface ExploredGridDao {
     // 🌟 专供成就引擎使用：不再返回几十万个网格的 List，只返回一个数字！
     @Query("SELECT COUNT(*) FROM explored_grids WHERE accuracy_level = :level")
     fun getGridCountByAccuracyFlow(level: Int): Flow<Int>
+
+    // 🌟 查询某个网格是否已经存在（用于判断是否为全新探索）
+    @Query("SELECT * FROM explored_grids WHERE grid_index = :index")
+    suspend fun getGrid(index: String): ExploredGrid?
 }

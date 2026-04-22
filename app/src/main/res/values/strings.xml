@@ -138,4 +138,27 @@
     <string name="ach_country_3">Passport Filled</string>
     <string name="ach_country_4">Citizen of Earth</string>
     <string name="ach_country_5">World Nomad</string>
+
+    <string name="unit_day">Days</string>
+
+    <string name="ach_streak_title">Eternal Vigil</string>
+    <string name="ach_streak_1">First Steps</string>
+    <string name="ach_streak_2">Perseverance</string>
+    <string name="ach_streak_3">Full Moon Cycle</string>
+    <string name="ach_streak_4">100-Day Pilgrimage</string>
+    <string name="ach_streak_5">Chronicler of Ages</string>
+
+    <string name="ach_newexp_title">Pathfinder Fever</string>
+    <string name="ach_newexp_1">Testing the Waters</string>
+    <string name="ach_newexp_2">In the Groove</string>
+    <string name="ach_newexp_3">Relentless Discovery</string>
+    <string name="ach_newexp_4">Infinite Horizons</string>
+    <string name="ach_newexp_5">Exploration Maniac</string>
+
+    <string name="ach_noexp_title">The Homebound Hermit</string>
+    <string name="ach_noexp_1">Brief Respite</string>
+    <string name="ach_noexp_2">Behind Closed Doors</string>
+    <string name="ach_noexp_3">Secluded Solitude</string>
+    <string name="ach_noexp_4">Zen Meditation</string>
+    <string name="ach_noexp_5">Transcendent Isolation</string>
 </resources>
