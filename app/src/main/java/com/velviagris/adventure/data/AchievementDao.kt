@@ -14,4 +14,11 @@ interface AchievementDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertAchievement(achievement: Achievement)
+
+    // 🌟 用于全库备份
+    @Query("SELECT * FROM achievements")
+    suspend fun getAllAchievements(): List<Achievement>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertAchievements(achievements: List<Achievement>)
 }

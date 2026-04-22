@@ -54,13 +54,29 @@ class HomeViewModel(
 
     fun recordRegionVisit(json: JSONObject, type: Int, name: String, currentExploredArea: Double) {
         viewModelScope.launch {
-            val placeId = json.optString("place_id").takeIf { it.isNotEmpty() } ?: UUID.randomUUID().toString()
+            val addressObj = json.optJSONObject("address")
+            val state = addressObj?.optString("state") ?: "UnknownState"
+            val country = addressObj?.optString("country") ?: "UnknownCountry"
+
+            // 提取 OSM 真实的地理实体类型，如果没找到默认给个 "region"
+            val addressType = json.optString("addresstype", "region")
+
+            val stableRegionId = "${type}_${name}_${state}_${country}"
+
             val stats = com.velviagris.adventure.utils.GeoJsonHelper.calculateExplorationStats(emptyList(), emptyList(), json)
             val totalArea = stats.second
 
-            val region = RegionProgress(placeId, name, type, totalArea, currentExploredArea)
+            // 存入真实类型
+            val region = RegionProgress(
+                regionId = stableRegionId,
+                regionName = name,
+                regionType = type,
+                addressType = addressType,
+                totalAreaKm2 = totalArea,
+                exploredAreaKm2 = currentExploredArea
+            )
             regionProgressDao.insertRegionIfNotExists(region)
-            regionProgressDao.updateExploredArea(placeId, currentExploredArea)
+            regionProgressDao.updateExploredArea(stableRegionId, currentExploredArea)
         }
     }
 

@@ -23,7 +23,8 @@ object GeoJsonHelper {
         return withContext(Dispatchers.IO) {
             try {
                 // 🌟 关键参数：polygon_geojson=1
-                val urlString = "https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=$lat&lon=$lon&zoom=$zoom&polygon_geojson=1"
+                val urlString =
+                    "https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=$lat&lon=$lon&zoom=$zoom&polygon_geojson=1"
                 val url = URL(urlString)
                 val connection = url.openConnection() as HttpURLConnection
                 connection.setRequestProperty("User-Agent", "Adventure/1.0")
@@ -32,7 +33,9 @@ object GeoJsonHelper {
                     val response = connection.inputStream.bufferedReader().use { it.readText() }
                     return@withContext JSONObject(response)
                 }
-            } catch (e: Exception) { e.printStackTrace() }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
             null
         }
     }
@@ -54,9 +57,12 @@ object GeoJsonHelper {
                     }
                     false
                 }
+
                 else -> false
             }
-        } catch (e: Exception) { return false }
+        } catch (e: Exception) {
+            return false
+        }
     }
 
     private fun checkPolygon(lat: Double, lon: Double, rings: JSONArray): Boolean {
@@ -72,7 +78,8 @@ object GeoJsonHelper {
             val p2Lat = p2.getDouble(1)
 
             if (((p1Lat > lat) != (p2Lat > lat)) &&
-                (lon < (p2Lon - p1Lon) * (lat - p1Lat) / (p2Lat - p1Lat) + p1Lon)) {
+                (lon < (p2Lon - p1Lon) * (lat - p1Lat) / (p2Lat - p1Lat) + p1Lon)
+            ) {
                 intersectCount++
             }
         }
@@ -94,10 +101,21 @@ object GeoJsonHelper {
     }
 
     // 🌟 2. 下载并保存到本地文件
-    suspend fun downloadAndCacheBoundary(context: Context, lat: Double, lon: Double, zoom: Int, level: String): JSONObject? {
+    suspend fun downloadAndCacheBoundary(
+        context: Context,
+        lat: Double,
+        lon: Double,
+        zoom: Int,
+        level: String
+    ): JSONObject? {
         return withContext(Dispatchers.IO) {
             try {
-                val urlString = "https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=$lat&lon=$lon&zoom=$zoom&polygon_geojson=1"
+//                // debug
+//                val lat = 52.86893404210065
+//                val lon = 27.593441674487167
+
+                val urlString =
+                    "https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=$lat&lon=$lon&zoom=$zoom&polygon_geojson=1"
                 val url = URL(urlString)
                 val connection = url.openConnection() as HttpURLConnection
                 connection.setRequestProperty("User-Agent", "Adventure/1.0")
@@ -113,7 +131,9 @@ object GeoJsonHelper {
 
                     return@withContext JSONObject(response)
                 }
-            } catch (e: Exception) { e.printStackTrace() }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
             null
         }
     }
@@ -167,7 +187,12 @@ object GeoJsonHelper {
     }
 
     // 复用之前的 BBox 面积计算逻辑
-    private fun calculateBBoxArea(latMin: Double, latMax: Double, lonMin: Double, lonMax: Double): Double {
+    private fun calculateBBoxArea(
+        latMin: Double,
+        latMax: Double,
+        lonMin: Double,
+        lonMax: Double
+    ): Double {
         val r = 6371.0
         val latCenter = Math.toRadians((latMin + latMax) / 2.0)
         val height = r * Math.toRadians(abs(latMax - latMin))

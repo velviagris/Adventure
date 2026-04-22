@@ -71,10 +71,10 @@ object AchievementRegistry {
         ),
         AchievementDef(
             categoryId = "city",
-            title = "城市收集者",
-            unit = "座",
+            title = "地区开拓者", // 从"城市收集者"改为"地区开拓者"
+            unit = "个", // 从"座"改为"个"
             thresholds = listOf(1.0, 5.0, 20.0, 100.0, 500.0),
-            tierNames = listOf("初来乍到", "走南闯北", "神州漫步", "百城领主", "大旅行家")
+            tierNames = listOf("初来乍到", "走南闯北", "神州漫步", "百县领主", "大旅行家")
         ),
         AchievementDef(
             categoryId = "country",
@@ -108,6 +108,19 @@ fun AchievementScreen(
     currentCityCount: Int,         // 🌟 新增
     currentCountryCount: Int       // 🌟 新增
 ) {
+    // 🌟 新增：页面一打开，立刻触发全量数据体检！
+    // 只要有任何一项指标跨越了阈值，就会立刻在底层写入新徽章，并触发 UI 刷新！
+    LaunchedEffect(currentArea, currentDistance, currentPreciseCount, currentBlurryCount, currentCityCount, currentCountryCount) {
+        viewModel.syncAchievements(
+            area = currentArea,
+            distance = currentDistance,
+            preciseCount = currentPreciseCount,
+            blurryCount = currentBlurryCount,
+            cityCount = currentCityCount,
+            countryCount = currentCountryCount
+        )
+    }
+
     // 拿到数据库里所有已解锁的成就
     val unlockedList by viewModel.groupedAchievements.collectAsState()
     var selectedState by remember { mutableStateOf<AchievementViewState?>(null) }

@@ -108,23 +108,49 @@ fun HomeScreen(viewModel: HomeViewModel) {
         // 防抖策略：限制至少 30 秒才允许向定位芯片索要一次快照，防止过度耗电
         if (now - lastAutoFetchTime < 30_000) return@LaunchedEffect
 
-        if (ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+        if (ContextCompat.checkSelfPermission(
+                context,
+                Manifest.permission.ACCESS_FINE_LOCATION
+            ) == PackageManager.PERMISSION_GRANTED
+        ) {
             fusedLocationClient.lastLocation.addOnSuccessListener { location ->
                 if (location != null) {
                     val lat = location.latitude
                     val lon = location.longitude
 
                     // 判断当前位置是否还在我们缓存的“城市多边形”内
-                    val isOutsideLocal = cityGeoJson == null || !GeoJsonHelper.isPointInPolygon(lat, lon, cityGeoJson!!)
+                    val isOutsideLocal = cityGeoJson == null || !GeoJsonHelper.isPointInPolygon(
+                        lat,
+                        lon,
+                        cityGeoJson!!
+                    )
 
                     if (isOutsideLocal) {
                         lastAutoFetchTime = now
                         coroutineScope.launch {
                             // 越界了！静默在后台下载新区域的数据
                             // 🌟 恢复为 zoom=10，抓取【市级】完整边界
-                            cityGeoJson = GeoJsonHelper.downloadAndCacheBoundary(context, lat, lon, 10, "city")
-                            stateGeoJson = GeoJsonHelper.downloadAndCacheBoundary(context, lat, lon, 5, "state")
-                            countryGeoJson = GeoJsonHelper.downloadAndCacheBoundary(context, lat, lon, 3, "country")
+                            cityGeoJson = GeoJsonHelper.downloadAndCacheBoundary(
+                                context,
+                                lat,
+                                lon,
+                                10,
+                                "city"
+                            )
+                            stateGeoJson = GeoJsonHelper.downloadAndCacheBoundary(
+                                context,
+                                lat,
+                                lon,
+                                5,
+                                "state"
+                            )
+                            countryGeoJson = GeoJsonHelper.downloadAndCacheBoundary(
+                                context,
+                                lat,
+                                lon,
+                                3,
+                                "country"
+                            )
                         }
                     }
                 }
@@ -133,27 +159,30 @@ fun HomeScreen(viewModel: HomeViewModel) {
     }
     // ====================================================================
 
-    // 🌟 解析本地城市层级名称
+    // ==========================================
+    // 🌟 解析本地城市层级名称 (彻底解决张冠李戴问题)
+    // ==========================================
     LaunchedEffect(blurryGridsList, preciseGridsList, cityGeoJson) {
         if (cityGeoJson != null) {
             val json = cityGeoJson!!
             val addressObj = json.optJSONObject("address")
 
-            currentCityName = addressObj?.optString("city")?.takeIf { it.isNotEmpty() }
-                ?: addressObj?.optString("town")?.takeIf { it.isNotEmpty() }
-                        ?: addressObj?.optString("municipality")?.takeIf { it.isNotEmpty() }
-                        ?: addressObj?.optString("county")?.takeIf { it.isNotEmpty() }
-                        ?: addressObj?.optString("city_district")?.takeIf { it.isNotEmpty() }
-                        ?: json.optString("display_name", unknownStr).split(",").firstOrNull()?.trim() ?: unknownStr
+            // 🌟 核心修复：直接读取多边形本体的官方名称！
+            // 保证你看到的面积，绝对100%属于这个名字对应的物理边界。
+            currentCityName = json.optString("name").takeIf { it.isNotEmpty() }
+                ?: addressObj?.optString("city")?.takeIf { it.isNotEmpty() }
+                        ?: addressObj?.optString("town")?.takeIf { it.isNotEmpty() }
+                        ?: json.optString("display_name", unknownStr).split(",").firstOrNull()
+                    ?.trim() ?: unknownStr
 
             withContext(Dispatchers.Default) {
-                val stats = GeoJsonHelper.calculateExplorationStats(blurryGridsList, preciseGridsList, json)
+                val stats =
+                    GeoJsonHelper.calculateExplorationStats(blurryGridsList, preciseGridsList, json)
                 cityExploredArea = stats.first
                 if (stats.second > 0) {
                     cityProgress = stats.first / stats.second
                 }
 
-                // 🌟 核心拦截器：如果名字是占位符或未知，坚决不写入数据库！
                 if (currentCityName != unknownStr && currentCityName != context.getString(R.string.region_not_downloaded)) {
                     viewModel.recordRegionVisit(json, 2, currentCityName, cityExploredArea)
                 }
@@ -165,39 +194,45 @@ fun HomeScreen(viewModel: HomeViewModel) {
         if (stateGeoJson != null) {
             val json = stateGeoJson!!
             val addressObj = json.optJSONObject("address")
-            currentStateName = addressObj?.optString("state")?.takeIf { it.isNotEmpty() }
-                ?: addressObj?.optString("province")?.takeIf { it.isNotEmpty() }
-                        ?: addressObj?.optString("region")?.takeIf { it.isNotEmpty() }
-                        ?: addressObj?.optString("state_district")?.takeIf { it.isNotEmpty() }
+            currentStateName = json.optString("name").takeIf { it.isNotEmpty() }
+                ?: addressObj?.optString("state")?.takeIf { it.isNotEmpty() }
+                        ?: addressObj?.optString("province")?.takeIf { it.isNotEmpty() }
                         ?: unknownStateStr
 
             withContext(Dispatchers.Default) {
-                val stats = GeoJsonHelper.calculateExplorationStats(blurryGridsList, preciseGridsList, json)
+                val stats =
+                    GeoJsonHelper.calculateExplorationStats(blurryGridsList, preciseGridsList, json)
                 stateExploredArea = stats.first
                 if (stats.second > 0) {
                     stateProgress = stats.first / stats.second
                 }
                 // 🌟 核心拦截器：如果名字是占位符或未知，坚决不写入数据库！
-                if (currentCityName != unknownStr && currentCityName != context.getString(R.string.region_not_downloaded)) {
-                    viewModel.recordRegionVisit(json, 2, currentCityName, cityExploredArea)
-                }            }
+                if (currentStateName != unknownStr && currentStateName != context.getString(R.string.region_not_downloaded)) {
+                    viewModel.recordRegionVisit(json, 3, currentStateName, stateExploredArea)
+                }
+            }
         }
     }
 
+    // 🌟 解析国家层级名称
     LaunchedEffect(blurryGridsList, preciseGridsList, countryGeoJson) {
         if (countryGeoJson != null) {
             val json = countryGeoJson!!
             val addressObj = json.optJSONObject("address")
-            currentCountryName = addressObj?.optString("country")?.takeIf { it.isNotEmpty() }
-                ?: json.optString("display_name", unknownStr).split(",").lastOrNull()?.trim() ?: unknownStr
+
+            currentCountryName = json.optString("name").takeIf { it.isNotEmpty() }
+                ?: addressObj?.optString("country")?.takeIf { it.isNotEmpty() }
+                        ?: json.optString("display_name", unknownStr).split(",").lastOrNull()
+                    ?.trim() ?: unknownStr
 
             withContext(Dispatchers.Default) {
-                val stats = GeoJsonHelper.calculateExplorationStats(blurryGridsList, preciseGridsList, json)
+                val stats =
+                    GeoJsonHelper.calculateExplorationStats(blurryGridsList, preciseGridsList, json)
                 countryExploredArea = stats.first
                 if (stats.second > 0) {
                     countryProgress = stats.first / stats.second
                 }
-                // 🌟 拦截占位符
+
                 if (currentCountryName != unknownStr && currentCountryName != context.getString(R.string.country_not_downloaded)) {
                     viewModel.recordRegionVisit(json, 4, currentCountryName, countryExploredArea)
                 }
@@ -217,19 +252,42 @@ fun HomeScreen(viewModel: HomeViewModel) {
                 TextButton(onClick = {
                     showDialog = false
                     isDownloading = true
-                    if (ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+                    if (ContextCompat.checkSelfPermission(
+                            context,
+                            Manifest.permission.ACCESS_FINE_LOCATION
+                        ) == PackageManager.PERMISSION_GRANTED
+                    ) {
                         fusedLocationClient.lastLocation.addOnSuccessListener { location ->
                             if (location != null) {
                                 coroutineScope.launch {
                                     // 🌟 手动刷新同样改回 Zoom 10 抓取市级边界
-                                    cityGeoJson = GeoJsonHelper.downloadAndCacheBoundary(context, location.latitude, location.longitude, 10, "city")
-                                    stateGeoJson = GeoJsonHelper.downloadAndCacheBoundary(context, location.latitude, location.longitude, 5, "state")
-                                    countryGeoJson = GeoJsonHelper.downloadAndCacheBoundary(context, location.latitude, location.longitude, 3, "country")
+                                    cityGeoJson = GeoJsonHelper.downloadAndCacheBoundary(
+                                        context,
+                                        location.latitude,
+                                        location.longitude,
+                                        10,
+                                        "city"
+                                    )
+                                    stateGeoJson = GeoJsonHelper.downloadAndCacheBoundary(
+                                        context,
+                                        location.latitude,
+                                        location.longitude,
+                                        5,
+                                        "state"
+                                    )
+                                    countryGeoJson = GeoJsonHelper.downloadAndCacheBoundary(
+                                        context,
+                                        location.latitude,
+                                        location.longitude,
+                                        3,
+                                        "country"
+                                    )
                                     isDownloading = false
                                 }
                             } else {
                                 isDownloading = false
-                                Toast.makeText(context, toastLocUnavailable, Toast.LENGTH_SHORT).show()
+                                Toast.makeText(context, toastLocUnavailable, Toast.LENGTH_SHORT)
+                                    .show()
                             }
                         }
                     } else {
@@ -238,7 +296,11 @@ fun HomeScreen(viewModel: HomeViewModel) {
                     }
                 }) { Text(stringResource(R.string.dialog_confirm)) }
             },
-            dismissButton = { TextButton(onClick = { showDialog = false }) { Text(stringResource(R.string.dialog_cancel)) } }
+            dismissButton = {
+                TextButton(onClick = {
+                    showDialog = false
+                }) { Text(stringResource(R.string.dialog_cancel)) }
+            }
         )
     }
 
@@ -246,7 +308,12 @@ fun HomeScreen(viewModel: HomeViewModel) {
         topBar = {
             TopAppBar(
                 modifier = Modifier.padding(top = 8.dp),
-                title = { Text(stringResource(R.string.app_name_display), fontWeight = FontWeight.Bold) },
+                title = {
+                    Text(
+                        stringResource(R.string.app_name_display),
+                        fontWeight = FontWeight.Bold
+                    )
+                },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.background,
                     scrolledContainerColor = Color.Unspecified,
@@ -259,8 +326,14 @@ fun HomeScreen(viewModel: HomeViewModel) {
         },
         floatingActionButton = {
             FloatingActionButton(onClick = { showDialog = true }) {
-                if (isDownloading) CircularProgressIndicator(modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
-                else Icon(Icons.Default.Refresh, contentDescription = stringResource(R.string.content_desc_update_boundary))
+                if (isDownloading) CircularProgressIndicator(
+                    modifier = Modifier.size(24.dp),
+                    strokeWidth = 2.dp
+                )
+                else Icon(
+                    Icons.Default.Refresh,
+                    contentDescription = stringResource(R.string.content_desc_update_boundary)
+                )
             }
         }
     ) { innerPadding ->
@@ -281,13 +354,17 @@ fun HomeScreen(viewModel: HomeViewModel) {
                 )
             ) {
                 Row(
-                    modifier = Modifier.padding(16.dp).fillMaxWidth(),
+                    modifier = Modifier
+                        .padding(16.dp)
+                        .fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     Column {
                         Text(
-                            text = if (isTrackingEnabled) stringResource(R.string.tracking_active_title) else stringResource(R.string.tracking_paused_title),
+                            text = if (isTrackingEnabled) stringResource(R.string.tracking_active_title) else stringResource(
+                                R.string.tracking_paused_title
+                            ),
                             style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.Bold,
                             color = if (isTrackingEnabled) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant
@@ -295,7 +372,9 @@ fun HomeScreen(viewModel: HomeViewModel) {
                         Text(
                             text = stringResource(R.string.tracking_switch_desc),
                             style = MaterialTheme.typography.bodySmall,
-                            color = if (isTrackingEnabled) MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f) else MaterialTheme.colorScheme.onSurfaceVariant
+                            color = if (isTrackingEnabled) MaterialTheme.colorScheme.onPrimaryContainer.copy(
+                                alpha = 0.8f
+                            ) else MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                     Switch(
@@ -313,19 +392,33 @@ fun HomeScreen(viewModel: HomeViewModel) {
                                     permissionsToRequest.add(Manifest.permission.ACTIVITY_RECOGNITION)
                                 }
 
-                                val hasLocationPermission = ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED ||
-                                        ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED
+                                val hasLocationPermission = ContextCompat.checkSelfPermission(
+                                    context,
+                                    Manifest.permission.ACCESS_FINE_LOCATION
+                                ) == PackageManager.PERMISSION_GRANTED ||
+                                        ContextCompat.checkSelfPermission(
+                                            context,
+                                            Manifest.permission.ACCESS_COARSE_LOCATION
+                                        ) == PackageManager.PERMISSION_GRANTED
 
                                 if (hasLocationPermission) {
                                     viewModel.toggleTracking(true)
-                                    val serviceIntent = Intent(context, LocationTrackingService::class.java).apply { putExtra("EXTRA_IS_PRECISE", isPreciseMode) }
+                                    val serviceIntent = Intent(
+                                        context,
+                                        LocationTrackingService::class.java
+                                    ).apply { putExtra("EXTRA_IS_PRECISE", isPreciseMode) }
                                     ContextCompat.startForegroundService(context, serviceIntent)
                                 } else {
                                     permissionLauncher.launch(permissionsToRequest.toTypedArray())
                                 }
                             } else {
                                 viewModel.toggleTracking(false)
-                                context.stopService(Intent(context, LocationTrackingService::class.java))
+                                context.stopService(
+                                    Intent(
+                                        context,
+                                        LocationTrackingService::class.java
+                                    )
+                                )
                             }
                         }
                     )
@@ -335,18 +428,27 @@ fun HomeScreen(viewModel: HomeViewModel) {
             OutlinedCard(
                 modifier = Modifier.fillMaxWidth(),
                 colors = CardDefaults.outlinedCardColors(
-                    containerColor = if (isTrackingEnabled) MaterialTheme.colorScheme.surface else MaterialTheme.colorScheme.surface.copy(alpha = 0.5f)
+                    containerColor = if (isTrackingEnabled) MaterialTheme.colorScheme.surface else MaterialTheme.colorScheme.surface.copy(
+                        alpha = 0.5f
+                    )
                 )
             ) {
                 Row(
-                    modifier = Modifier.padding(16.dp).fillMaxWidth(),
+                    modifier = Modifier
+                        .padding(16.dp)
+                        .fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     Column {
-                        Text(stringResource(R.string.accuracy_setting_title), style = MaterialTheme.typography.titleMedium)
                         Text(
-                            text = if (isPreciseMode) stringResource(R.string.accuracy_precise_desc) else stringResource(R.string.accuracy_battery_desc),
+                            stringResource(R.string.accuracy_setting_title),
+                            style = MaterialTheme.typography.titleMedium
+                        )
+                        Text(
+                            text = if (isPreciseMode) stringResource(R.string.accuracy_precise_desc) else stringResource(
+                                R.string.accuracy_battery_desc
+                            ),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -356,9 +458,10 @@ fun HomeScreen(viewModel: HomeViewModel) {
                         onCheckedChange = { isChecked ->
                             viewModel.setPreciseMode(isChecked)
                             if (isTrackingEnabled) {
-                                val serviceIntent = Intent(context, LocationTrackingService::class.java).apply {
-                                    putExtra("EXTRA_IS_PRECISE", isChecked)
-                                }
+                                val serviceIntent =
+                                    Intent(context, LocationTrackingService::class.java).apply {
+                                        putExtra("EXTRA_IS_PRECISE", isChecked)
+                                    }
                                 ContextCompat.startForegroundService(context, serviceIntent)
                             }
                         }
@@ -366,26 +469,53 @@ fun HomeScreen(viewModel: HomeViewModel) {
                 }
             }
 
-            AreaProgressCard(stringResource(R.string.progress_city_title), currentCityName, cityExploredArea, cityProgress)
-            AreaProgressCard(stringResource(R.string.progress_state_title), currentStateName, stateExploredArea, stateProgress)
-            AreaProgressCard(stringResource(R.string.progress_country_title), currentCountryName, countryExploredArea, countryProgress)
+            AreaProgressCard(
+                stringResource(R.string.progress_city_title),
+                currentCityName,
+                cityExploredArea,
+                cityProgress
+            )
+            AreaProgressCard(
+                stringResource(R.string.progress_state_title),
+                currentStateName,
+                stateExploredArea,
+                stateProgress
+            )
+            AreaProgressCard(
+                stringResource(R.string.progress_country_title),
+                currentCountryName,
+                countryExploredArea,
+                countryProgress
+            )
 
             OutlinedCard(
                 modifier = Modifier.fillMaxWidth(),
                 colors = CardDefaults.outlinedCardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
-                    Text(stringResource(R.string.progress_global_title), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                    Text(
+                        stringResource(R.string.progress_global_title),
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
                     val worldProgress = (globalExploredAreaKm2 / 148940000.0).toFloat()
 
                     Row(
-                        modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 8.dp),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.Bottom
                     ) {
-                        Text(text = stringResource(R.string.global_explored_area_label), style = MaterialTheme.typography.bodyMedium)
                         Text(
-                            String.format(stringResource(R.string.format_area_km2), globalExploredAreaKm2),
+                            text = stringResource(R.string.global_explored_area_label),
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                        Text(
+                            String.format(
+                                stringResource(R.string.format_area_km2),
+                                globalExploredAreaKm2
+                            ),
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.primary
@@ -394,11 +524,18 @@ fun HomeScreen(viewModel: HomeViewModel) {
 
                     LinearProgressIndicator(
                         progress = { worldProgress },
-                        modifier = Modifier.fillMaxWidth().padding(top = 12.dp)
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 12.dp)
                     )
                     Text(
-                        String.format(stringResource(R.string.format_progress_global), worldProgress * 100),
-                        modifier = Modifier.align(Alignment.End).padding(top = 8.dp),
+                        String.format(
+                            stringResource(R.string.format_progress_global),
+                            worldProgress * 100
+                        ),
+                        modifier = Modifier
+                            .align(Alignment.End)
+                            .padding(top = 8.dp),
                         style = MaterialTheme.typography.bodyLarge,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.primary
@@ -436,7 +573,10 @@ fun AreaProgressCard(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.Bottom
             ) {
-                Text(text = stringResource(R.string.local_explored_area_label), style = MaterialTheme.typography.bodyMedium)
+                Text(
+                    text = stringResource(R.string.local_explored_area_label),
+                    style = MaterialTheme.typography.bodyMedium
+                )
                 Text(
                     String.format(stringResource(R.string.format_area_km2), exploredAreaKm2),
                     style = MaterialTheme.typography.titleMedium,
@@ -449,16 +589,23 @@ fun AreaProgressCard(
                 Spacer(modifier = Modifier.height(12.dp))
                 LinearProgressIndicator(
                     progress = { progress.toFloat().coerceIn(0f, 1f) },
-                    modifier = Modifier.fillMaxWidth().height(6.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(6.dp),
                     color = MaterialTheme.colorScheme.primary,
                     trackColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f)
                 )
                 Row(
-                    modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 4.dp),
                     horizontalArrangement = Arrangement.End
                 ) {
                     Text(
-                        String.format(stringResource(R.string.format_progress_local), progress * 100),
+                        String.format(
+                            stringResource(R.string.format_progress_local),
+                            progress * 100
+                        ),
                         style = MaterialTheme.typography.labelLarge,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.primary

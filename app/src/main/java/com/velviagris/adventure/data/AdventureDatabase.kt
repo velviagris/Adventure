@@ -7,7 +7,7 @@ import androidx.room.RoomDatabase
 
 @Database(
     entities = [ExploredGrid::class, Achievement::class, DailyStat::class, RegionProgress::class],
-    version = 4,
+    version = 5,
     exportSchema = false
 )
 abstract class AdventureDatabase : RoomDatabase() {

@@ -47,10 +47,11 @@ fun AdventureAppMain(database: AdventureDatabase, preferences: AppPreferences) {
     val achievementViewModel: AchievementViewModel = viewModel(
         factory = AchievementViewModelFactory(database.achievementDao())
     )
+    // 🌟 直接传入 database 而不是 dao
     val settingsViewModel: SettingsViewModel = viewModel(
         factory = object : ViewModelProvider.Factory {
             override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                return SettingsViewModel(database.exploredGridDao(), preferences) as T
+                return SettingsViewModel(database, preferences) as T
             }
         }
     )
