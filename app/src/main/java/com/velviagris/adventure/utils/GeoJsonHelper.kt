@@ -12,34 +12,6 @@ import kotlin.math.*
 
 object GeoJsonHelper {
 
-    // 存储本地下载的边界数据（实际开发建议存入 Room 或文件）
-    private var cachedCityGeoJson: JSONObject? = null
-    private var cachedCountryGeoJson: JSONObject? = null
-
-    /**
-     * 下载行政区划的 GeoJSON 边界
-     */
-    suspend fun downloadBoundary(lat: Double, lon: Double, zoom: Int): JSONObject? {
-        return withContext(Dispatchers.IO) {
-            try {
-                // 🌟 关键参数：polygon_geojson=1
-                val urlString =
-                    "https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=$lat&lon=$lon&zoom=$zoom&polygon_geojson=1"
-                val url = URL(urlString)
-                val connection = url.openConnection() as HttpURLConnection
-                connection.setRequestProperty("User-Agent", "Adventure/1.0")
-
-                if (connection.responseCode == 200) {
-                    val response = connection.inputStream.bufferedReader().use { it.readText() }
-                    return@withContext JSONObject(response)
-                }
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
-            null
-        }
-    }
-
     /**
      * 判断一个经纬度点是否在 GeoJSON 多边形内部 (Ray-casting Algorithm)
      */
