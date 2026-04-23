@@ -7,6 +7,7 @@ import androidx.lifecycle.viewModelScope
 import com.velviagris.adventure.data.*
 import com.velviagris.adventure.utils.AchievementRegistry
 import com.velviagris.adventure.utils.AppPreferences
+import com.velviagris.adventure.utils.GeoJsonHelper
 import com.velviagris.adventure.utils.GridHelper
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -66,7 +67,7 @@ class HomeViewModel(
 
             val stableRegionId = "${type}_${name}_${state}_${country}"
 
-            val stats = com.velviagris.adventure.utils.GeoJsonHelper.calculateExplorationStats(emptyList(), emptyList(), json)
+            val stats = GeoJsonHelper.calculateExplorationStats(emptyList(), emptyList(), json)
             val totalArea = stats.second
 
             // 存入真实类型
@@ -79,7 +80,7 @@ class HomeViewModel(
                 exploredAreaKm2 = currentExploredArea
             )
             regionProgressDao.insertRegionIfNotExists(region)
-            regionProgressDao.updateExploredArea(stableRegionId, currentExploredArea)
+            regionProgressDao.updateExploredArea(stableRegionId, totalArea, currentExploredArea)
         }
     }
 

@@ -29,7 +29,6 @@ object GeoJsonHelper {
                     }
                     false
                 }
-
                 else -> false
             }
         } catch (e: Exception) {
@@ -38,7 +37,6 @@ object GeoJsonHelper {
     }
 
     private fun checkPolygon(lat: Double, lon: Double, rings: JSONArray): Boolean {
-        // 通常第一个 ring 是外圈
         val ring = rings.getJSONArray(0)
         var intersectCount = 0
         for (i in 0 until ring.length() - 1) {
@@ -58,7 +56,7 @@ object GeoJsonHelper {
         return intersectCount % 2 != 0
     }
 
-    // 🌟 1. 从本地文件系统读取缓存的 GeoJSON
+    // 1. 从本地文件系统读取缓存的 GeoJSON
     suspend fun getCachedBoundary(context: Context, level: String): JSONObject? {
         return withContext(Dispatchers.IO) {
             try {
@@ -72,7 +70,7 @@ object GeoJsonHelper {
         }
     }
 
-    // 🌟 2. 下载并保存到本地文件
+    // 2. 下载并保存到本地文件
     suspend fun downloadAndCacheBoundary(
         context: Context,
         lat: Double,
@@ -82,12 +80,7 @@ object GeoJsonHelper {
     ): JSONObject? {
         return withContext(Dispatchers.IO) {
             try {
-//                // debug
-//                val lat = 52.86893404210065
-//                val lon = 27.593441674487167
-
-                val urlString =
-                    "https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=$lat&lon=$lon&zoom=$zoom&polygon_geojson=1"
+                val urlString = "https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=$lat&lon=$lon&zoom=$zoom&polygon_geojson=1"
                 val url = URL(urlString)
                 val connection = url.openConnection() as HttpURLConnection
                 connection.setRequestProperty("User-Agent", "Adventure/1.0")
@@ -96,11 +89,8 @@ object GeoJsonHelper {
 
                 if (connection.responseCode == 200) {
                     val response = connection.inputStream.bufferedReader().use { it.readText() }
-
-                    // 将下载的纯文本字符串保存到手机内部存储中
                     val file = File(context.filesDir, "boundary_$level.json")
                     file.writeText(response)
-
                     return@withContext JSONObject(response)
                 }
             } catch (e: Exception) {
@@ -110,17 +100,16 @@ object GeoJsonHelper {
         }
     }
 
-    // 🌟 3. 新增计算探索进度的核心方法
+    // 🌟 3. 核心统计方法：用精确算法替换 BBox 矩形算法
     fun calculateExplorationStats(
         blurry: List<com.velviagris.adventure.data.ExploredGrid>,
         precise: List<com.velviagris.adventure.data.ExploredGrid>,
         geoJson: JSONObject
     ): Pair<Double, Double> {
-        val bbox = geoJson.optJSONArray("boundingbox") ?: return Pair(0.0, 1.0)
-        val totalArea = calculateBBoxArea(
-            bbox.getString(0).toDouble(), bbox.getString(1).toDouble(),
-            bbox.getString(2).toDouble(), bbox.getString(3).toDouble()
-        )
+
+        // 🌟 核心修改：计算真实的几何多边形面积
+        val totalArea = calculateExactGeoJsonAreaKm2(geoJson)
+        if (totalArea <= 0.0) return Pair(0.0, 1.0) // 容错处理
 
         var exploredInRegion = 0.0
         val blurrySet = blurry.map { it.gridIndex }.toSet()
@@ -146,29 +135,90 @@ object GeoJsonHelper {
         return Pair(exploredInRegion, totalArea)
     }
 
+    // =========================================================
+    // 🌟 GIS 纯正血统：地球球面多边形面积计算引擎
+    // =========================================================
+
+    private fun calculateExactGeoJsonAreaKm2(geoJson: JSONObject): Double {
+        val geometry = geoJson.optJSONObject("geojson") ?: return 0.0
+        val type = geometry.optString("type")
+        val coordinates = geometry.optJSONArray("coordinates") ?: return 0.0
+
+        var totalArea = 0.0
+        try {
+            when (type) {
+                "Polygon" -> {
+                    totalArea += calculateSinglePolygonArea(coordinates)
+                }
+                "MultiPolygon" -> {
+                    for (i in 0 until coordinates.length()) {
+                        totalArea += calculateSinglePolygonArea(coordinates.getJSONArray(i))
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+        return totalArea
+    }
+
+    private fun calculateSinglePolygonArea(polygonArray: JSONArray): Double {
+        if (polygonArray.length() == 0) return 0.0
+
+        // 容错设计：OSM 的 GeoJSON 偶尔外圈和内圈顺序是乱的。
+        // 我们遍历所有的闭合环，把最大的那个环作为外边框（陆地），其余较小的环全部视为洞穴（内陆湖泊/飞地）并减去面积。
+        var maxArea = 0.0
+        var totalHoleArea = 0.0
+
+        for (i in 0 until polygonArray.length()) {
+            val ringArea = abs(calculateRingArea(polygonArray.getJSONArray(i)))
+            if (ringArea > maxArea) {
+                if (maxArea > 0) totalHoleArea += maxArea // 之前的 max 其实是个洞穴
+                maxArea = ringArea
+            } else {
+                totalHoleArea += ringArea
+            }
+        }
+        return maxArea - totalHoleArea
+    }
+
+    /**
+     * 基于地球半径域的线积分求积公式 (Spherical Polygon Area Line Integral)
+     */
+    private fun calculateRingArea(ring: JSONArray): Double {
+        var area = 0.0
+        val r = 6371.0088 // WGS84 地球平均半径 (km)
+        val n = ring.length()
+        if (n < 3) return 0.0
+
+        for (i in 0 until n - 1) {
+            val p1 = ring.getJSONArray(i)
+            val p2 = ring.getJSONArray(i + 1)
+
+            val lon1 = Math.toRadians(p1.getDouble(0))
+            val lat1 = Math.toRadians(p1.getDouble(1))
+            val lon2 = Math.toRadians(p2.getDouble(0))
+            val lat2 = Math.toRadians(p2.getDouble(1))
+
+            // 修正跨越国际日期变更线（180度经线）的边界
+            var dLon = lon2 - lon1
+            if (dLon > PI) dLon -= 2 * PI
+            if (dLon < -PI) dLon += 2 * PI
+
+            area += dLon * (sin(lat1) + sin(lat2)) / 2.0
+        }
+        return area * r * r
+    }
+
     // 辅助方法：获取网格中心点坐标
     private fun getGridCenter(gridIndex: String): Pair<Double, Double> {
         val parts = gridIndex.split("_")
         val zoom = parts[0].toInt()
-        val x = parts[1].toDouble() + 0.5 // 取中心
+        val x = parts[1].toDouble() + 0.5
         val y = parts[2].toDouble() + 0.5
         val n = 2.0.pow(zoom)
         val lon = x / n * 360.0 - 180.0
         val lat = atan(sinh(PI * (1.0 - 2.0 * y / n))) * 180.0 / PI
         return Pair(lat, lon)
-    }
-
-    // 复用之前的 BBox 面积计算逻辑
-    private fun calculateBBoxArea(
-        latMin: Double,
-        latMax: Double,
-        lonMin: Double,
-        lonMax: Double
-    ): Double {
-        val r = 6371.0
-        val latCenter = Math.toRadians((latMin + latMax) / 2.0)
-        val height = r * Math.toRadians(abs(latMax - latMin))
-        val width = r * Math.toRadians(abs(lonMax - lonMin)) * cos(latCenter)
-        return height * width
     }
 }
