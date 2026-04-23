@@ -112,7 +112,6 @@ fun MapScreen(viewModel: MapViewModel) {
     Scaffold(
         topBar = {
             TopAppBar(
-                modifier = Modifier.padding(top = 8.dp),
                 title = { Text(stringResource(R.string.map_title), fontWeight = FontWeight.Bold) },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background),
                 windowInsets = WindowInsets(0.dp)

@@ -85,8 +85,8 @@
     <string name="achievement_tier_1">铜牌</string>
     <string name="achievement_tier_2">银牌</string>
     <string name="achievement_tier_3">金牌</string>
-    <string name="achievement_tier_4">铂金</string>
-    <string name="achievement_tier_5">黑牌</string>
+    <string name="achievement_tier_4">铂金牌</string>
+    <string name="achievement_tier_5">玛瑙牌</string>
     <string name="achievement_test_add">触发一个新成就 (测试)</string>
 
     <string name="unit_km2">km²</string>

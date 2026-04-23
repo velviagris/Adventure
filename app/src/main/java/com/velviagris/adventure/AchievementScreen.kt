@@ -13,7 +13,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material.icons.filled.Lock
-import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -24,6 +23,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.velviagris.adventure.utils.AchievementDef
 import com.velviagris.adventure.utils.AchievementRegistry
@@ -33,14 +33,13 @@ import java.util.*
 data class AchievementViewState(
     val def: AchievementDef,
     val currentProgress: Double,
-    val currentLevel: Int,
-    val unlockHistory: Map<Int, Long>
+    val currentLevel: Int, // 0 表示完全没解锁
+    val unlockHistory: Map<Int, Long> // Level -> 时间戳
 )
 
 // ==========================================
-// 🌟 2. 核心 UI 界面
+// 🌟 1. 有状态容器 (Stateful Wrapper)
 // ==========================================
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AchievementScreen(
     viewModel: AchievementViewModel,
@@ -53,7 +52,6 @@ fun AchievementScreen(
 ) {
     val context = LocalContext.current
 
-    // 🌟 在后台用公共引擎统一跑体检
     LaunchedEffect(currentArea, currentDistance, currentPreciseCount, currentBlurryCount, currentCityCount, currentCountryCount) {
         val metrics = mapOf(
             "area" to currentArea,
@@ -66,11 +64,9 @@ fun AchievementScreen(
         viewModel.syncAchievements(context, metrics)
     }
 
-    // 拿到数据库里所有已解锁的成就
     val unlockedList by viewModel.groupedAchievements.collectAsState()
     var selectedState by remember { mutableStateOf<AchievementViewState?>(null) }
 
-    // 用 stringResource 完美获取国际化的标题
     val displayStates = remember(unlockedList, currentArea, currentDistance, currentPreciseCount, currentBlurryCount, currentCityCount, currentCountryCount) {
         AchievementRegistry.definitions.map { def ->
             val progress = when (def.categoryId) {
@@ -83,7 +79,6 @@ fun AchievementScreen(
                 else -> 0.0
             }
 
-            // 通过上下文和资源 ID 反查（解决历史数据匹配问题）
             val groupHistory = unlockedList.find { it.categoryTitle == context.getString(def.titleResId) }?.history ?: emptyList()
             val historyMap = groupHistory.associate { it.level to it.earnedTime }
             val currentLevel = groupHistory.maxOfOrNull { it.level } ?: 0
@@ -92,6 +87,27 @@ fun AchievementScreen(
         }
     }
 
+    // 🌟 将数据传递给无状态组件
+    AchievementScreenContent(
+        displayStates = displayStates,
+        selectedState = selectedState,
+        onMedalClick = { selectedState = it },
+        onDialogDismiss = { selectedState = null }
+    )
+}
+
+// ==========================================
+// 🌟 2. 无状态核心 UI 界面 (Stateless UI)
+// 这样就能完美支持 @Preview 了！
+// ==========================================
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun AchievementScreenContent(
+    displayStates: List<AchievementViewState>,
+    selectedState: AchievementViewState?,
+    onMedalClick: (AchievementViewState) -> Unit,
+    onDialogDismiss: () -> Unit
+) {
     Scaffold(
         topBar = {
             TopAppBar(
@@ -109,18 +125,18 @@ fun AchievementScreen(
             modifier = Modifier.fillMaxSize().padding(innerPadding)
         ) {
             items(displayStates) { state ->
-                AchievementMedalItem(state = state) { selectedState = state }
+                AchievementMedalItem(state = state) { onMedalClick(state) }
             }
         }
 
         selectedState?.let { state ->
-            AchievementDetailDialog(state = state, onDismiss = { selectedState = null })
+            AchievementDetailDialog(state = state, onDismiss = onDialogDismiss)
         }
     }
 }
 
 // ==========================================
-// 🌟 3. 网格中的牌子组件 (支持灰态锁定)
+// 🌟 3. 网格中的牌子组件
 // ==========================================
 @Composable
 fun AchievementMedalItem(state: AchievementViewState, onClick: () -> Unit) {
@@ -142,7 +158,6 @@ fun AchievementMedalItem(state: AchievementViewState, onClick: () -> Unit) {
             }
         }
         Spacer(modifier = Modifier.height(8.dp))
-        // 🌟 使用国际化字符串
         Text(
             text = stringResource(state.def.titleResId),
             style = MaterialTheme.typography.labelMedium,
@@ -155,7 +170,7 @@ fun AchievementMedalItem(state: AchievementViewState, onClick: () -> Unit) {
 }
 
 // ==========================================
-// 🌟 4. 详情弹窗 (进度条 + 目标条件预测)
+// 🌟 4. 详情弹窗
 // ==========================================
 @Composable
 fun AchievementDetailDialog(state: AchievementViewState, onDismiss: () -> Unit) {
@@ -168,7 +183,6 @@ fun AchievementDetailDialog(state: AchievementViewState, onDismiss: () -> Unit) 
     val isMaxLevel = state.currentLevel == 5
     val progressRatio = if (isMaxLevel) 1f else (state.currentProgress / nextTarget).toFloat().coerceIn(0f, 1f)
 
-    // 🌟 获取国际化单位
     val unitStr = stringResource(state.def.unitResId)
 
     AlertDialog(
@@ -187,7 +201,6 @@ fun AchievementDetailDialog(state: AchievementViewState, onDismiss: () -> Unit) 
                 }
 
                 Spacer(modifier = Modifier.height(16.dp))
-                // 🌟 使用国际化标题
                 Text(stringResource(state.def.titleResId), style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
 
                 val currentTierStr = if (isLocked) stringResource(R.string.achievement_locked) else getTierName(state.currentLevel)
@@ -222,7 +235,6 @@ fun AchievementDetailDialog(state: AchievementViewState, onDismiss: () -> Unit) 
                                 Spacer(modifier = Modifier.width(12.dp))
                                 Column {
                                     Text(getTierName(lvl), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold, color = if(isTierUnlocked) MaterialTheme.colorScheme.onSurface else Color.Gray)
-                                    // 🌟 使用国际化名称
                                     Text(stringResource(state.def.tierNameResIds[lvl-1]), style = MaterialTheme.typography.labelSmall, color = Color.Gray)
                                 }
                             }
@@ -241,14 +253,14 @@ fun AchievementDetailDialog(state: AchievementViewState, onDismiss: () -> Unit) 
     )
 }
 
-// 辅助方法保持不变
+// 辅助方法
 fun getLevelColor(level: Int): Color {
     return when (level) {
-        1 -> Color(0xFFCD7F32)
-        2 -> Color(0xFFC0C0C0)
-        3 -> Color(0xFFFFD700)
-        4 -> Color(0xFF00E5FF)
-        else -> Color(0xFF111111)
+        1 -> Color(0xFFCD7F32) // 铜
+        2 -> Color(0xFFC0C0C0) // 银
+        3 -> Color(0xFFFFD700) // 金
+        4 -> Color(0xFF00E5FF) // 铂金
+        else -> Color(0xFF111111) // 玛瑙
     }
 }
 
@@ -260,5 +272,74 @@ fun getTierName(level: Int): String {
         3 -> stringResource(R.string.achievement_tier_3)
         4 -> stringResource(R.string.achievement_tier_4)
         else -> stringResource(R.string.achievement_tier_5)
+    }
+}
+
+
+// ==========================================
+// 🌟 5. 中英双语 @Preview 预览区
+// ==========================================
+
+// 构建一份假数据用于展示（包含：银牌、未解锁、满级黑牌 等不同状态）
+private val mockDisplayStates = listOf(
+    AchievementViewState(
+        def = AchievementRegistry.definitions.getOrNull(0) ?: AchievementRegistry.definitions.first(),
+        currentProgress = 15.0,
+        currentLevel = 2, // 银牌
+        unlockHistory = mapOf(1 to System.currentTimeMillis() - 86400000L, 2 to System.currentTimeMillis())
+    ),
+    AchievementViewState(
+        def = AchievementRegistry.definitions.getOrNull(1) ?: AchievementRegistry.definitions.first(),
+        currentProgress = 50.0,
+        currentLevel = 0, // 未解锁
+        unlockHistory = emptyMap()
+    ),
+    AchievementViewState(
+        def = AchievementRegistry.definitions.getOrNull(2) ?: AchievementRegistry.definitions.first(),
+        currentProgress = 6000.0,
+        currentLevel = 5, // 黑牌满级
+        unlockHistory = (1..5).associateWith { System.currentTimeMillis() - it * 86400000L }
+    )
+)
+
+@Preview(name = "成就墙 - 中文", locale = "zh", showBackground = true)
+@Composable
+fun AchievementScreenPreviewZh() {
+    MaterialTheme {
+        AchievementScreenContent(
+            displayStates = mockDisplayStates,
+            selectedState = null,
+            onMedalClick = {},
+            onDialogDismiss = {}
+        )
+    }
+}
+
+@Preview(name = "成就墙 - English", locale = "en", showBackground = true)
+@Composable
+fun AchievementScreenPreviewEn() {
+    MaterialTheme {
+        AchievementScreenContent(
+            displayStates = mockDisplayStates,
+            selectedState = null,
+            onMedalClick = {},
+            onDialogDismiss = {}
+        )
+    }
+}
+
+@Preview(name = "成就详情弹窗 - 中文", locale = "zh", showBackground = true)
+@Composable
+fun AchievementDetailDialogPreviewZh() {
+    MaterialTheme {
+        AchievementDetailDialog(state = mockDisplayStates[0], onDismiss = {})
+    }
+}
+
+@Preview(name = "成就详情弹窗 - English", locale = "en", showBackground = true)
+@Composable
+fun AchievementDetailDialogPreviewEn() {
+    MaterialTheme {
+        AchievementDetailDialog(state = mockDisplayStates[0], onDismiss = {})
     }
 }

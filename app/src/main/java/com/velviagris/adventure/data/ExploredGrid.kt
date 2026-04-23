@@ -6,7 +6,7 @@ import androidx.room.PrimaryKey
 
 @Entity(tableName = "explored_grids")
 data class ExploredGrid(
-    // 核心：空间网格的唯一ID（例如之后用 Uber H3 算出来的 "89283082803ffff"）
+    // 核心：空间网格的唯一ID（根据坐标计算）
     @PrimaryKey
     @ColumnInfo(name = "grid_index")
     val gridIndex: String,

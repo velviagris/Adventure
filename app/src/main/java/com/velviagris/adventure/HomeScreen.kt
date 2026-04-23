@@ -307,7 +307,6 @@ fun HomeScreen(viewModel: HomeViewModel) {
     Scaffold(
         topBar = {
             TopAppBar(
-                modifier = Modifier.padding(top = 8.dp),
                 title = {
                     Text(
                         stringResource(R.string.app_name_display),
