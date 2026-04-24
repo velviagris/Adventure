@@ -60,6 +60,10 @@
     <string name="settings_export_desc">Save Adventure data as a JSON file</string>
     <string name="toast_export_success">Backup exported successfully!</string>
     <string name="toast_export_fail">Export failed</string>
+    <string name="settings_export_logs_title">Export Logs</string>
+    <string name="settings_export_logs_desc">Save the app activity log as a text file</string>
+    <string name="toast_export_logs_success">Logs exported successfully!</string>
+    <string name="toast_export_logs_fail">Log export failed</string>
     <string name="settings_import_title">Restore from Backup</string>
     <string name="settings_import_desc">Import previous JSON backup (overwrites duplicates)</string>
     <string name="toast_import_success">Successfully imported %d records!</string>

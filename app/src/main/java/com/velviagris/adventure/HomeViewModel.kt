@@ -6,6 +6,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.velviagris.adventure.data.*
 import com.velviagris.adventure.utils.AchievementRegistry
+import com.velviagris.adventure.utils.AppLogger
 import com.velviagris.adventure.utils.AppPreferences
 import com.velviagris.adventure.utils.GeoJsonHelper
 import com.velviagris.adventure.utils.GridHelper
@@ -53,8 +54,15 @@ class HomeViewModel(
     val countryCount: StateFlow<Int> = regionProgressDao.getRegionCountFlow(4)
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
 
-    fun toggleTracking(enabled: Boolean) = viewModelScope.launch { prefs.setTrackingEnabled(enabled) }
-    fun setPreciseMode(enabled: Boolean) = viewModelScope.launch { prefs.setPreciseMode(enabled) }
+    fun toggleTracking(enabled: Boolean) = viewModelScope.launch {
+        prefs.setTrackingEnabled(enabled)
+        AppLogger.i("HomeViewModel", "Tracking toggled: enabled=$enabled")
+    }
+
+    fun setPreciseMode(enabled: Boolean) = viewModelScope.launch {
+        prefs.setPreciseMode(enabled)
+        AppLogger.i("HomeViewModel", "Precise mode changed: enabled=$enabled")
+    }
 
     fun recordRegionVisit(json: JSONObject, type: Int, name: String, currentExploredArea: Double) {
         viewModelScope.launch {
@@ -81,6 +89,10 @@ class HomeViewModel(
             )
             regionProgressDao.insertRegionIfNotExists(region)
             regionProgressDao.updateExploredArea(stableRegionId, totalArea, currentExploredArea)
+            AppLogger.d(
+                "HomeViewModel",
+                "Region progress updated: regionId=$stableRegionId exploredArea=$currentExploredArea totalArea=$totalArea"
+            )
         }
     }
 

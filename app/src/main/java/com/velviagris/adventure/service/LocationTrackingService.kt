@@ -22,6 +22,7 @@ import com.velviagris.adventure.data.ExploredGrid
 import com.velviagris.adventure.data.AdventureDatabase
 import com.velviagris.adventure.data.DailyStat
 import com.velviagris.adventure.data.DailyStatDao
+import com.velviagris.adventure.utils.AppLogger
 import com.velviagris.adventure.utils.GridHelper
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -61,6 +62,8 @@ class LocationTrackingService : Service() {
 
     override fun onCreate() {
         super.onCreate()
+        AppLogger.initialize(applicationContext)
+        AppLogger.i("LocationTrackingService", "Service created")
         database = AdventureDatabase.getDatabase(this)
         dailyStatDao = database.dailyStatDao()
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
@@ -100,6 +103,7 @@ class LocationTrackingService : Service() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         isPreciseMode = intent?.getBooleanExtra("EXTRA_IS_PRECISE", false) ?: false
+        AppLogger.i("LocationTrackingService", "Service started, preciseMode=$isPreciseMode")
 
         isLocationPaused = false
         stillCounter = 0
@@ -117,7 +121,9 @@ class LocationTrackingService : Service() {
             fusedLocationClient.lastLocation.addOnSuccessListener { location ->
                 if (location != null) recordLocation(location.latitude, location.longitude, location.time)
             }
-        } catch (e: SecurityException) { }
+        } catch (e: SecurityException) {
+            AppLogger.e("LocationTrackingService", "Missing permission when requesting last known location", e)
+        }
 
         return START_STICKY
     }
@@ -155,19 +161,23 @@ class LocationTrackingService : Service() {
     private fun pauseLocationUpdates() {
         isLocationPaused = true
         fusedLocationClient.removeLocationUpdates(locationCallback)
+        AppLogger.i("LocationTrackingService", "Location updates paused because device is still")
         updateNotification(getString(R.string.tracking_paused_still))
     }
 
     private fun resumeLocationUpdates() {
         isLocationPaused = false
         requestLocationUpdates()
+        AppLogger.i("LocationTrackingService", "Location updates resumed")
         updateNotification(getNotificationText())
 
         try {
             fusedLocationClient.lastLocation.addOnSuccessListener { location ->
                 if (location != null) recordLocation(location.latitude, location.longitude, location.time)
             }
-        } catch (e: SecurityException) {}
+        } catch (e: SecurityException) {
+            AppLogger.e("LocationTrackingService", "Missing permission when resuming last known location", e)
+        }
     }
 
     private fun requestLocationUpdates() {
@@ -180,7 +190,9 @@ class LocationTrackingService : Service() {
         try {
             fusedLocationClient.removeLocationUpdates(locationCallback)
             fusedLocationClient.requestLocationUpdates(locationRequest, locationCallback, Looper.getMainLooper())
-        } catch (e: SecurityException) { }
+        } catch (e: SecurityException) {
+            AppLogger.e("LocationTrackingService", "Failed to request location updates", e)
+        }
     }
 
     private fun requestActivityUpdates() {
@@ -188,7 +200,10 @@ class LocationTrackingService : Service() {
             Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
             try {
                 activityRecognitionClient.requestActivityUpdates(30000L, activityPendingIntent)
-            } catch (e: SecurityException) { }
+                AppLogger.i("LocationTrackingService", "Activity recognition updates requested")
+            } catch (e: SecurityException) {
+                AppLogger.e("LocationTrackingService", "Failed to request activity updates", e)
+            }
         }
     }
 
@@ -212,6 +227,7 @@ class LocationTrackingService : Service() {
                 stat.newGridsCount += 1
                 stat.isTrackingActive = true
                 dailyStatDao.insertDailyStat(stat)
+                AppLogger.d("LocationTrackingService", "Recorded newly explored grid: $gridIndex")
             }
 
             dao.insertGrid(grid)
@@ -238,6 +254,7 @@ class LocationTrackingService : Service() {
 
     override fun onDestroy() {
         super.onDestroy()
+        AppLogger.i("LocationTrackingService", "Service destroyed")
         fusedLocationClient.removeLocationUpdates(locationCallback)
         try {
             val hasPermission = Build.VERSION.SDK_INT < Build.VERSION_CODES.Q ||
@@ -247,7 +264,9 @@ class LocationTrackingService : Service() {
                 activityRecognitionClient.removeActivityUpdates(activityPendingIntent)
             }
             unregisterReceiver(activityReceiver)
-        } catch (e: Exception) { }
+        } catch (e: Exception) {
+            AppLogger.e("LocationTrackingService", "Failed to clean up tracking service", e)
+        }
 
         serviceScope.cancel()
     }

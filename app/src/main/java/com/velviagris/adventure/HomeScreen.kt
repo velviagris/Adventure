@@ -24,6 +24,7 @@ import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import com.google.android.gms.location.LocationServices
 import com.velviagris.adventure.service.LocationTrackingService
+import com.velviagris.adventure.utils.AppLogger
 import com.velviagris.adventure.utils.GeoJsonHelper
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -82,9 +83,11 @@ fun HomeScreen(viewModel: HomeViewModel) {
                 putExtra("EXTRA_IS_PRECISE", isPreciseMode)
             }
             ContextCompat.startForegroundService(context, serviceIntent)
+            AppLogger.i("HomeScreen", "Tracking started after permission grant")
             Toast.makeText(context, toastTrackingStarted, Toast.LENGTH_SHORT).show()
         } else {
             viewModel.toggleTracking(false)
+            AppLogger.w("HomeScreen", "Tracking start denied because location permission was not granted")
             Toast.makeText(context, toastPermissionRequired, Toast.LENGTH_LONG).show()
         }
     }
@@ -127,6 +130,7 @@ fun HomeScreen(viewModel: HomeViewModel) {
 
                     if (isOutsideLocal) {
                         lastAutoFetchTime = now
+                        AppLogger.i("HomeScreen", "User moved outside cached local boundary, refreshing boundary data")
                         coroutineScope.launch {
                             // 越界了！静默在后台下载新区域的数据
                             // 🌟 恢复为 zoom=10，抓取【市级】完整边界
@@ -283,15 +287,18 @@ fun HomeScreen(viewModel: HomeViewModel) {
                                         "country"
                                     )
                                     isDownloading = false
+                                    AppLogger.i("HomeScreen", "Manual boundary refresh completed")
                                 }
                             } else {
                                 isDownloading = false
+                                AppLogger.w("HomeScreen", "Manual boundary refresh failed because location was unavailable")
                                 Toast.makeText(context, toastLocUnavailable, Toast.LENGTH_SHORT)
                                     .show()
                             }
                         }
                     } else {
                         isDownloading = false
+                        AppLogger.w("HomeScreen", "Manual boundary refresh blocked because location permission was missing")
                         Toast.makeText(context, toastNeedLocPerm, Toast.LENGTH_SHORT).show()
                     }
                 }) { Text(stringResource(R.string.dialog_confirm)) }
@@ -407,11 +414,13 @@ fun HomeScreen(viewModel: HomeViewModel) {
                                         LocationTrackingService::class.java
                                     ).apply { putExtra("EXTRA_IS_PRECISE", isPreciseMode) }
                                     ContextCompat.startForegroundService(context, serviceIntent)
+                                    AppLogger.i("HomeScreen", "Tracking enabled from home screen switch")
                                 } else {
                                     permissionLauncher.launch(permissionsToRequest.toTypedArray())
                                 }
                             } else {
                                 viewModel.toggleTracking(false)
+                                AppLogger.i("HomeScreen", "Tracking disabled from home screen switch")
                                 context.stopService(
                                     Intent(
                                         context,
@@ -463,6 +472,7 @@ fun HomeScreen(viewModel: HomeViewModel) {
                                     }
                                 ContextCompat.startForegroundService(context, serviceIntent)
                             }
+                            AppLogger.i("HomeScreen", "Precision mode switch changed: enabled=$isChecked")
                         }
                     )
                 }

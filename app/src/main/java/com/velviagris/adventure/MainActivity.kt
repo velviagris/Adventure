@@ -5,7 +5,8 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import com.velviagris.adventure.data.AdventureDatabase
-import com.velviagris.adventure.ui.theme.AdventureTheme // 或者是你项目默认生成的 Theme 名字
+import com.velviagris.adventure.ui.theme.AdventureTheme
+import com.velviagris.adventure.utils.AppLogger
 import com.velviagris.adventure.utils.AppPreferences
 
 class MainActivity : ComponentActivity() {
@@ -13,14 +14,14 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
 
         enableEdgeToEdge()
+        AppLogger.initialize(applicationContext)
+        AppLogger.i("MainActivity", "MainActivity created")
 
-        // 👇 1. 在这里初始化 Room 数据库
         val database = AdventureDatabase.getDatabase(this)
-        val appPreferences = AppPreferences(this.applicationContext)
+        val appPreferences = AppPreferences(applicationContext)
 
         setContent {
             AdventureTheme {
-                // 👇 2. 把数据库传进主界面
                 AdventureAppMain(database = database, preferences = appPreferences)
             }
         }

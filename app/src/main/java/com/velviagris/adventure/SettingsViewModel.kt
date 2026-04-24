@@ -8,8 +8,13 @@ import androidx.lifecycle.viewModelScope
 import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
-import com.velviagris.adventure.data.*
+import com.velviagris.adventure.data.Achievement
+import com.velviagris.adventure.data.AdventureDatabase
+import com.velviagris.adventure.data.DailyStat
+import com.velviagris.adventure.data.ExploredGrid
+import com.velviagris.adventure.data.RegionProgress
 import com.velviagris.adventure.service.DailySummaryWorker
+import com.velviagris.adventure.utils.AppLogger
 import com.velviagris.adventure.utils.AppPreferences
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.SharingStarted
@@ -22,15 +27,17 @@ import java.util.Calendar
 import java.util.concurrent.TimeUnit
 
 class SettingsViewModel(
-    private val db: AdventureDatabase, // 🌟 掌控整个数据库
+    private val db: AdventureDatabase,
     private val prefs: AppPreferences
 ) : ViewModel() {
 
-    val isDailySummaryEnabled = prefs.isDailySummaryEnabled.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
+    val isDailySummaryEnabled = prefs.isDailySummaryEnabled
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
 
     fun toggleDailySummary(context: Context, enabled: Boolean) {
         viewModelScope.launch {
             prefs.setDailySummaryEnabled(enabled)
+            AppLogger.i("SettingsViewModel", "Daily summary toggled: enabled=$enabled")
             val workManager = WorkManager.getInstance(context)
 
             if (enabled) {
@@ -49,24 +56,27 @@ class SettingsViewModel(
                     .setInitialDelay(initialDelay, TimeUnit.MILLISECONDS)
                     .build()
 
-                workManager.enqueueUniquePeriodicWork("DailySummaryWork", ExistingPeriodicWorkPolicy.UPDATE, summaryRequest)
+                workManager.enqueueUniquePeriodicWork(
+                    "DailySummaryWork",
+                    ExistingPeriodicWorkPolicy.UPDATE,
+                    summaryRequest
+                )
+                AppLogger.i("SettingsViewModel", "Scheduled daily summary worker")
             } else {
                 workManager.cancelUniqueWork("DailySummaryWork")
+                AppLogger.i("SettingsViewModel", "Cancelled daily summary worker")
             }
         }
     }
 
-    // ==========================================
-    // 🌟 V2 全库快照导出
-    // ==========================================
     fun exportData(contentResolver: ContentResolver, uri: Uri, onComplete: (Boolean) -> Unit) {
         viewModelScope.launch {
             val success = withContext(Dispatchers.IO) {
                 try {
+                    AppLogger.i("SettingsViewModel", "Starting backup export to $uri")
                     val rootObj = JSONObject()
-                    rootObj.put("version", 2) // 标记为 V2 备份
+                    rootObj.put("version", 2)
 
-                    // 1. 导出网格
                     val gridsArray = JSONArray()
                     db.exploredGridDao().getAllGrids().forEach {
                         gridsArray.put(JSONObject().apply {
@@ -78,7 +88,6 @@ class SettingsViewModel(
                     }
                     rootObj.put("grids", gridsArray)
 
-                    // 2. 导出成就
                     val achievementsArray = JSONArray()
                     db.achievementDao().getAllAchievements().forEach {
                         achievementsArray.put(JSONObject().apply {
@@ -92,7 +101,6 @@ class SettingsViewModel(
                     }
                     rootObj.put("achievements", achievementsArray)
 
-                    // 3. 导出每日距离统计
                     val dailyStatsArray = JSONArray()
                     db.dailyStatDao().getAllDailyStats().forEach {
                         dailyStatsArray.put(JSONObject().apply {
@@ -102,7 +110,6 @@ class SettingsViewModel(
                     }
                     rootObj.put("daily_stats", dailyStatsArray)
 
-                    // 4. 导出行政区进度
                     val regionsArray = JSONArray()
                     db.regionProgressDao().getAllRegions().forEach {
                         regionsArray.put(JSONObject().apply {
@@ -117,13 +124,17 @@ class SettingsViewModel(
                     }
                     rootObj.put("regions", regionsArray)
 
-                    // 写入文件
-                    contentResolver.openOutputStream(uri)?.use { outputStream ->
+                    val wroteFile = contentResolver.openOutputStream(uri)?.use { outputStream ->
                         outputStream.write(rootObj.toString().toByteArray())
+                    } != null
+                    if (!wroteFile) {
+                        AppLogger.w("SettingsViewModel", "Backup export failed because output stream was unavailable")
+                        return@withContext false
                     }
+                    AppLogger.i("SettingsViewModel", "Backup export completed successfully")
                     true
                 } catch (e: Exception) {
-                    e.printStackTrace()
+                    AppLogger.e("SettingsViewModel", "Backup export failed", e)
                     false
                 }
             }
@@ -131,73 +142,87 @@ class SettingsViewModel(
         }
     }
 
-    // ==========================================
-    // 🌟 智能兼容导入 (支持 V1 旧数据和 V2 新数据)
-    // ==========================================
+    fun exportLogs(contentResolver: ContentResolver, uri: Uri, onComplete: (Boolean) -> Unit) {
+        viewModelScope.launch {
+            val success = withContext(Dispatchers.IO) {
+                AppLogger.i("SettingsViewModel", "Starting log export to $uri")
+                AppLogger.exportLogs(contentResolver, uri)
+            }
+            if (success) {
+                AppLogger.i("SettingsViewModel", "Log export completed successfully")
+            }
+            onComplete(success)
+        }
+    }
+
     fun importData(contentResolver: ContentResolver, uri: Uri, onComplete: (Boolean, Int) -> Unit) {
         viewModelScope.launch {
             var importedGridCount = 0
             val success = withContext(Dispatchers.IO) {
                 try {
-                    val jsonString = contentResolver.openInputStream(uri)?.bufferedReader()?.use { it.readText() }?.trim()
+                    AppLogger.i("SettingsViewModel", "Starting backup import from $uri")
+                    val jsonString = contentResolver.openInputStream(uri)
+                        ?.bufferedReader()
+                        ?.use { it.readText() }
+                        ?.trim()
                     if (jsonString.isNullOrEmpty()) return@withContext false
 
-                    // 🌟 兼容性判定：如果以 "[" 开头，说明是老版本的 JSONArray 备份
                     if (jsonString.startsWith("[")) {
                         val jsonArray = JSONArray(jsonString)
                         val gridsToImport = mutableListOf<ExploredGrid>()
                         for (i in 0 until jsonArray.length()) {
                             val obj = jsonArray.getJSONObject(i)
-                            gridsToImport.add(ExploredGrid(
-                                gridIndex = obj.getString("i"),
-                                accuracyLevel = obj.getInt("a"),
-                                sourceType = obj.getInt("s"),
-                                exploreTime = obj.getLong("t")
-                            ))
+                            gridsToImport.add(
+                                ExploredGrid(
+                                    gridIndex = obj.getString("i"),
+                                    accuracyLevel = obj.getInt("a"),
+                                    sourceType = obj.getInt("s"),
+                                    exploreTime = obj.getLong("t")
+                                )
+                            )
                         }
                         db.exploredGridDao().insertGrids(gridsToImport)
                         importedGridCount = gridsToImport.size
-
                     } else if (jsonString.startsWith("{")) {
-                        // 🌟 V2 新版本完整备份恢复
                         val rootObj = JSONObject(jsonString)
 
-                        // 1. 恢复网格
                         if (rootObj.has("grids")) {
                             val gridsArray = rootObj.getJSONArray("grids")
                             val gridsToImport = mutableListOf<ExploredGrid>()
                             for (i in 0 until gridsArray.length()) {
                                 val obj = gridsArray.getJSONObject(i)
-                                gridsToImport.add(ExploredGrid(
-                                    gridIndex = obj.getString("i"),
-                                    accuracyLevel = obj.getInt("a"),
-                                    sourceType = obj.getInt("s"),
-                                    exploreTime = obj.getLong("t")
-                                ))
+                                gridsToImport.add(
+                                    ExploredGrid(
+                                        gridIndex = obj.getString("i"),
+                                        accuracyLevel = obj.getInt("a"),
+                                        sourceType = obj.getInt("s"),
+                                        exploreTime = obj.getLong("t")
+                                    )
+                                )
                             }
                             db.exploredGridDao().insertGrids(gridsToImport)
                             importedGridCount = gridsToImport.size
                         }
 
-                        // 2. 恢复成就
                         if (rootObj.has("achievements")) {
                             val arr = rootObj.getJSONArray("achievements")
                             val list = mutableListOf<Achievement>()
                             for (i in 0 until arr.length()) {
                                 val obj = arr.getJSONObject(i)
-                                list.add(Achievement(
-                                    id = obj.getString("id"),
-                                    title = obj.getString("title"),
-                                    description = obj.getString("desc"),
-                                    level = obj.getInt("level"),
-                                    iconRes = obj.getString("icon"),
-                                    earnedTime = obj.getLong("time")
-                                ))
+                                list.add(
+                                    Achievement(
+                                        id = obj.getString("id"),
+                                        title = obj.getString("title"),
+                                        description = obj.getString("desc"),
+                                        level = obj.getInt("level"),
+                                        iconRes = obj.getString("icon"),
+                                        earnedTime = obj.getLong("time")
+                                    )
+                                )
                             }
                             db.achievementDao().insertAchievements(list)
                         }
 
-                        // 3. 恢复统计
                         if (rootObj.has("daily_stats")) {
                             val arr = rootObj.getJSONArray("daily_stats")
                             val list = mutableListOf<DailyStat>()
@@ -208,28 +233,33 @@ class SettingsViewModel(
                             db.dailyStatDao().insertDailyStats(list)
                         }
 
-                        // 4. 恢复区域
                         if (rootObj.has("regions")) {
                             val arr = rootObj.getJSONArray("regions")
                             val list = mutableListOf<RegionProgress>()
                             for (i in 0 until arr.length()) {
                                 val obj = arr.getJSONObject(i)
-                                list.add(RegionProgress(
-                                    regionId = obj.getString("id"),
-                                    regionName = obj.getString("name"),
-                                    regionType = obj.getInt("type"),
-                                    addressType = obj.getString("addressType"),
-                                    totalAreaKm2 = obj.getDouble("totalArea"),
-                                    exploredAreaKm2 = obj.getDouble("expArea"),
-                                    firstVisitTime = obj.getLong("firstTime")
-                                ))
+                                list.add(
+                                    RegionProgress(
+                                        regionId = obj.getString("id"),
+                                        regionName = obj.getString("name"),
+                                        regionType = obj.getInt("type"),
+                                        addressType = obj.getString("addressType"),
+                                        totalAreaKm2 = obj.getDouble("totalArea"),
+                                        exploredAreaKm2 = obj.getDouble("expArea"),
+                                        firstVisitTime = obj.getLong("firstTime")
+                                    )
+                                )
                             }
                             db.regionProgressDao().insertRegions(list)
                         }
                     }
+                    AppLogger.i(
+                        "SettingsViewModel",
+                        "Backup import completed successfully, importedGridCount=$importedGridCount"
+                    )
                     true
                 } catch (e: Exception) {
-                    e.printStackTrace()
+                    AppLogger.e("SettingsViewModel", "Backup import failed", e)
                     false
                 }
             }
