@@ -13,6 +13,7 @@ import com.velviagris.adventure.data.AdventureDatabase
 import com.velviagris.adventure.data.DailyStat
 import com.velviagris.adventure.data.ExploredGrid
 import com.velviagris.adventure.data.RegionProgress
+import com.velviagris.adventure.data.UserRecord
 import com.velviagris.adventure.service.DailySummaryWorker
 import com.velviagris.adventure.utils.AppLogger
 import com.velviagris.adventure.utils.AppPreferences
@@ -84,6 +85,7 @@ class SettingsViewModel(
                             put("a", it.accuracyLevel)
                             put("s", it.sourceType)
                             put("t", it.exploreTime)
+                            put("v", it.visitCount) // 🌟 导出访问次数v
                         })
                     }
                     rootObj.put("grids", gridsArray)
@@ -123,6 +125,12 @@ class SettingsViewModel(
                         })
                     }
                     rootObj.put("regions", regionsArray)
+
+                    val record = db.userRecordDao().getRecord() ?: UserRecord()
+                    rootObj.put("user_record", JSONObject().apply {
+                        put("last", record.lastBlurryGridId)
+                        put("maxDist", record.maxSingleMoveDistanceKm)
+                    })
 
                     val wroteFile = contentResolver.openOutputStream(uri)?.use { outputStream ->
                         outputStream.write(rootObj.toString().toByteArray())
@@ -177,7 +185,8 @@ class SettingsViewModel(
                                     gridIndex = obj.getString("i"),
                                     accuracyLevel = obj.getInt("a"),
                                     sourceType = obj.getInt("s"),
-                                    exploreTime = obj.getLong("t")
+                                    exploreTime = obj.getLong("t"),
+                                    visitCount = obj.optInt("v", 1)
                                 )
                             )
                         }
@@ -251,6 +260,14 @@ class SettingsViewModel(
                                 )
                             }
                             db.regionProgressDao().insertRegions(list)
+                        }
+                        // 恢复 UserRecord 快照
+                        if (rootObj.has("user_record")) {
+                            val rObj = rootObj.getJSONObject("user_record")
+                            db.userRecordDao().insertRecord(UserRecord(
+                                lastBlurryGridId = rObj.optString("last", ""),
+                                maxSingleMoveDistanceKm = rObj.optDouble("maxDist", 0.0)
+                            ))
                         }
                     }
                     AppLogger.i(

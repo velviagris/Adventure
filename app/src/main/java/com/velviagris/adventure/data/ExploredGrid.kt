@@ -21,5 +21,8 @@ data class ExploredGrid(
 
     // 探索时间戳
     @ColumnInfo(name = "explore_time")
-    val exploreTime: Long = System.currentTimeMillis()
+    val exploreTime: Long = System.currentTimeMillis(),
+
+    @ColumnInfo(name = "visit_count")
+    var visitCount: Int = 1
 )

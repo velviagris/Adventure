@@ -6,8 +6,8 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 
 @Database(
-    entities = [ExploredGrid::class, Achievement::class, DailyStat::class, RegionProgress::class],
-    version = 6,
+    entities = [ExploredGrid::class, Achievement::class, DailyStat::class, RegionProgress::class, UserRecord::class],
+    version = 7,
     exportSchema = false
 )
 abstract class AdventureDatabase : RoomDatabase() {
@@ -16,6 +16,8 @@ abstract class AdventureDatabase : RoomDatabase() {
     abstract fun achievementDao(): AchievementDao
     abstract fun dailyStatDao(): DailyStatDao
     abstract fun regionProgressDao(): RegionProgressDao
+    abstract fun userRecordDao(): UserRecordDao
+
 
     companion object {
         @Volatile

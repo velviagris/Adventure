@@ -3,14 +3,25 @@ package com.velviagris.adventure.utils
 import android.content.Context
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import okhttp3.OkHttpClient
+import okhttp3.Request
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.File
 import java.net.HttpURLConnection
 import java.net.URL
+import java.util.concurrent.TimeUnit
 import kotlin.math.*
 
 object GeoJsonHelper {
+
+    // 建议将 client 定义为单例，避免重复创建线程池
+    private val client = OkHttpClient.Builder()
+        .connectTimeout(10, TimeUnit.SECONDS) // 连接超时：建议增加到 10s
+        .readTimeout(10, TimeUnit.SECONDS)    // 读取超时
+        .writeTimeout(10, TimeUnit.SECONDS)
+        .retryOnConnectionFailure(true)       // 开启失败自动重试
+        .build()
 
     /**
      * 判断一个经纬度点是否在 GeoJSON 多边形内部 (Ray-casting Algorithm)
@@ -79,24 +90,33 @@ object GeoJsonHelper {
         level: String
     ): JSONObject? {
         return withContext(Dispatchers.IO) {
-            try {
-                val urlString = "https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=$lat&lon=$lon&zoom=$zoom&polygon_geojson=1"
-                val url = URL(urlString)
-                val connection = url.openConnection() as HttpURLConnection
-                connection.setRequestProperty("User-Agent", "Adventure/1.0")
-                connection.connectTimeout = 5000
-                connection.readTimeout = 5000
+            val urlString = "https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=$lat&lon=$lon&zoom=$zoom&polygon_geojson=1"
 
-                if (connection.responseCode == 200) {
-                    val response = connection.inputStream.bufferedReader().use { it.readText() }
+            val request = Request.Builder()
+                .url(urlString)
+                .header("User-Agent", "Adventure/1.0") // Nominatim 必须包含合规的 UA
+                .header("Accept-Language", "en-US,en;q=0.9") // 明确语言偏好
+                .build()
+
+            try {
+                client.newCall(request).execute().use { response ->
+                    if (!response.isSuccessful) {
+                        // 处理非 200 响应（如 403 被封禁或 429 请求太频繁）
+                        return@withContext null
+                    }
+
+                    val responseBody = response.body?.string() ?: return@withContext null
+
+                    // 写入缓存
                     val file = File(context.filesDir, "boundary_$level.json")
-                    file.writeText(response)
-                    return@withContext JSONObject(response)
+                    file.writeText(responseBody)
+
+                    return@withContext JSONObject(responseBody)
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
+                null
             }
-            null
         }
     }
 

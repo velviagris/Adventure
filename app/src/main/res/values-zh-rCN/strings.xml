@@ -60,6 +60,10 @@
     <string name="settings_export_desc">将世界冒险数据保存为 JSON 文件</string>
     <string name="toast_export_success">备份导出成功！</string>
     <string name="toast_export_fail">导出失败</string>
+    <string name="settings_export_logs_title">导出日志</string>
+    <string name="settings_export_logs_desc">将日志导出到文本文件</string>
+    <string name="toast_export_logs_success">日志导出成功</string>
+    <string name="toast_export_logs_fail">日志导出失败</string>
     <string name="settings_import_title">从备份恢复</string>
     <string name="settings_import_desc">导入之前的 JSON 备份文件 (覆盖重复项)</string>
     <string name="toast_import_success">成功导入 %d 条数据！</string>
@@ -161,4 +165,18 @@
     <string name="ach_noexp_3">隐居遁世</string>
     <string name="ach_noexp_4">坐忘禅关</string>
     <string name="ach_noexp_5">绝世独立</string>
+
+    <string name="ach_visit_title">故地重游</string>
+    <string name="ach_visit_1">常客</string>
+    <string name="ach_visit_2">轻车熟路</string>
+    <string name="ach_visit_3">归属感</string>
+    <string name="ach_visit_4">恋家癖</string>
+    <string name="ach_visit_5">地头蛇</string>
+
+    <string name="ach_teleport_title">时空跃迁</string>
+    <string name="ach_teleport_1">大跨步</string>
+    <string name="ach_teleport_2">飞毛腿</string>
+    <string name="ach_teleport_3">追风者</string>
+    <string name="ach_teleport_4">万尺一线</string>
+    <string name="ach_teleport_5">曲率引擎</string>
 </resources>

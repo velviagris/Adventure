@@ -165,4 +165,19 @@
     <string name="ach_noexp_3">Secluded Solitude</string>
     <string name="ach_noexp_4">Zen Meditation</string>
     <string name="ach_noexp_5">Transcendent Isolation</string>
+
+    <string name="ach_visit_title">Sentimental Journey</string>
+    <string name="ach_visit_1">Frequent Visitor</string>
+    <string name="ach_visit_2">Well-Traveled</string>
+    <string name="ach_visit_3">Sense of Belonging</string>
+    <string name="ach_visit_4">Homebound Soul</string>
+    <string name="ach_visit_5">Local Legend</string>
+
+    <string name="ach_teleport_title">Chronos Leap</string>
+    <string name="ach_teleport_1">Giant Stride</string>
+    <string name="ach_teleport_2">Fleetfoot</string>
+    <string name="ach_teleport_3">Windchaser</string>
+    <string name="ach_teleport_4">Worldfolder</string>
+    <string name="ach_teleport_5">Warp Drive</string>
+
 </resources>

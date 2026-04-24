@@ -41,7 +41,8 @@ fun AdventureAppMain(database: AdventureDatabase, preferences: AppPreferences) {
             preferences,
             database.achievementDao(),
             database.dailyStatDao(),
-            database.regionProgressDao()
+            database.regionProgressDao(),
+            database.userRecordDao()
         )
     )
     val mapViewModel: MapViewModel = viewModel(

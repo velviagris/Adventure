@@ -22,6 +22,8 @@ import com.velviagris.adventure.data.ExploredGrid
 import com.velviagris.adventure.data.AdventureDatabase
 import com.velviagris.adventure.data.DailyStat
 import com.velviagris.adventure.data.DailyStatDao
+import com.velviagris.adventure.data.UserRecord
+import com.velviagris.adventure.data.UserRecordDao
 import com.velviagris.adventure.utils.AppLogger
 import com.velviagris.adventure.utils.GridHelper
 import kotlinx.coroutines.CoroutineScope
@@ -60,12 +62,19 @@ class LocationTrackingService : Service() {
         }
     }
 
+    private lateinit var userRecordDao: UserRecordDao
+    private var currentUserRecord = UserRecord() // 内存中维护一份热数据
+
     override fun onCreate() {
         super.onCreate()
         AppLogger.initialize(applicationContext)
         AppLogger.i("LocationTrackingService", "Service created")
         database = AdventureDatabase.getDatabase(this)
         dailyStatDao = database.dailyStatDao()
+        userRecordDao = database.userRecordDao()
+        serviceScope.launch {
+            currentUserRecord = userRecordDao.getRecord() ?: UserRecord()
+        }
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
         activityRecognitionClient = ActivityRecognition.getClient(this)
 
@@ -129,12 +138,21 @@ class LocationTrackingService : Service() {
     }
 
     private fun recordDistance(distanceMeters: Float) {
+        val distanceKm = distanceMeters / 1000.0
         val dateString = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault()).format(java.util.Date())
+
         serviceScope.launch {
+            // 1. 累加总距离
             val stat = dailyStatDao.getDailyStat(dateString) ?: DailyStat(dateString)
-            stat.totalDistanceKm += (distanceMeters / 1000.0)
-            stat.isTrackingActive = true // 🌟 只要记录了距离，就算作今日已签到
+            stat.totalDistanceKm += distanceKm
+            stat.isTrackingActive = true
             dailyStatDao.insertDailyStat(stat)
+
+            // 2. 🌟 极限状态检测：破了我的“单次瞬间位移”记录吗？
+            if (distanceKm > currentUserRecord.maxSingleMoveDistanceKm) {
+                currentUserRecord.maxSingleMoveDistanceKm = distanceKm
+                userRecordDao.insertRecord(currentUserRecord)
+            }
         }
     }
 
@@ -208,29 +226,49 @@ class LocationTrackingService : Service() {
     }
 
     private fun recordLocation(lat: Double, lon: Double, timeMs: Long) {
-        val gridIndex = GridHelper.getGridIndex(lat, lon, isPreciseMode)
-        val grid = ExploredGrid(
-            gridIndex = gridIndex,
-            accuracyLevel = if (isPreciseMode) 1 else 0,
-            sourceType = 0,
-            exploreTime = timeMs
-        )
         serviceScope.launch {
             val dao = database.exploredGridDao()
 
-            // 🌟 判断是否为全新探索！
-            val existing = dao.getGrid(gridIndex)
-            if (existing == null) {
-                // 如果数据库里没有这个格子，说明是全新的！
+            // =====================================
+            // 🌟 1. 记录模糊网格及访问次数计算逻辑
+            // =====================================
+            val blurryGridIndex = GridHelper.getGridIndex(lat, lon, false)
+            val existingBlurry = dao.getGrid(blurryGridIndex)
+
+            if (existingBlurry == null) {
+                // 首次来到这个模糊网格，新建记录 (初始访问次数为 1)
+                dao.insertGrid(ExploredGrid(blurryGridIndex, 0, 0, timeMs, visitCount = 1))
+
+                // 触发 DailyStat 的全新网格计数
                 val dateString = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault()).format(java.util.Date(timeMs))
                 val stat = dailyStatDao.getDailyStat(dateString) ?: DailyStat(dateString)
                 stat.newGridsCount += 1
                 stat.isTrackingActive = true
                 dailyStatDao.insertDailyStat(stat)
-                AppLogger.d("LocationTrackingService", "Recorded newly explored grid: $gridIndex")
+            } else {
+                // 这个网格以前来过。我们检查是不是“刚刚从其他网格跨越过来的”？
+                val lastGrid = currentUserRecord.lastBlurryGridId
+                if (lastGrid.isNotEmpty() && lastGrid != blurryGridIndex) {
+                    // 🌟 判定成功：从别的网格走回了这片老区域，访问次数 +1！
+                    dao.incrementGridVisit(blurryGridIndex)
+                }
             }
 
-            dao.insertGrid(grid)
+            // 更新状态机：无论怎样，现在我的当前模糊网格就是它了
+            if (currentUserRecord.lastBlurryGridId != blurryGridIndex) {
+                currentUserRecord.lastBlurryGridId = blurryGridIndex
+                userRecordDao.insertRecord(currentUserRecord) // 持久化状态
+            }
+
+            // =====================================
+            // 🌟 2. 记录高精网格 (如果是高精模式)
+            // =====================================
+            if (isPreciseMode) {
+                val preciseGridIndex = GridHelper.getGridIndex(lat, lon, true)
+                if (dao.getGrid(preciseGridIndex) == null) {
+                    dao.insertGrid(ExploredGrid(preciseGridIndex, 1, 0, timeMs, visitCount = 1))
+                }
+            }
         }
     }
 

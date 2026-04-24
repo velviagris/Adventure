@@ -38,4 +38,12 @@ interface ExploredGridDao {
     // 🌟 查询某个网格是否已经存在（用于判断是否为全新探索）
     @Query("SELECT * FROM explored_grids WHERE grid_index = :index")
     suspend fun getGrid(index: String): ExploredGrid?
+
+    // 🌟 给某个网格的访问次数 +1
+    @Query("UPDATE explored_grids SET visit_count = visit_count + 1 WHERE grid_index = :index")
+    suspend fun incrementGridVisit(index: String)
+
+    // 🌟 专供成就引擎：获取所有网格中，访问次数最高的那一个
+    @Query("SELECT MAX(visit_count) FROM explored_grids")
+    fun getMaxVisitCountFlow(): Flow<Int?>
 }

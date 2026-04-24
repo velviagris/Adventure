@@ -62,6 +62,16 @@ object AchievementRegistry {
             "streak_noexp", R.string.ach_noexp_title, R.string.unit_day,
             listOf(3.0, 7.0, 14.0, 30.0, 100.0),
             listOf(R.string.ach_noexp_1, R.string.ach_noexp_2, R.string.ach_noexp_3, R.string.ach_noexp_4, R.string.ach_noexp_5)
+        ),
+        AchievementDef(
+            "visit", R.string.ach_visit_title, R.string.unit_count, // 故地重游
+            listOf(5.0, 20.0, 50.0, 100.0, 500.0), // 同一个网格反复离开又回去的次数
+            listOf(R.string.ach_visit_1, R.string.ach_visit_2, R.string.ach_visit_3, R.string.ach_visit_4, R.string.ach_visit_5)
+        ),
+        AchievementDef(
+            "teleport", R.string.ach_teleport_title, R.string.unit_km, // 时空跃迁 (单次定位间距)
+            listOf(2.0, 10.0, 50.0, 200.0, 1000.0), // 比如你关掉GPS坐高铁/飞机，下了车再开，就会获得！
+            listOf(R.string.ach_teleport_1, R.string.ach_teleport_2, R.string.ach_teleport_3, R.string.ach_teleport_4, R.string.ach_teleport_5)
         )
     )
 
