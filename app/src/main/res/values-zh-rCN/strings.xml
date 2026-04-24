@@ -92,6 +92,8 @@
     <string name="achievement_tier_4">铂金牌</string>
     <string name="achievement_tier_5">玛瑙牌</string>
     <string name="achievement_test_add">触发一个新成就 (测试)</string>
+    <string name="achievement_current_process">当前进度</string>
+    <string name="achievement_is_maxlevel">已满级</string>
 
     <string name="unit_km2">km²</string>
     <string name="unit_count">个</string>
@@ -101,7 +103,10 @@
     <string name="achievement_unlocked">已解锁</string>
     <string name="achievement_locked">尚未解锁</string>
 
+    <string name="achievement_task_desc">任务描述</string>
+
     <string name="ach_area_title">大地漫步者</string>
+    <string name="ach_area_desc">在全球累计探索的总面积。</string>
     <string name="ach_area_1">见微知著</string>
     <string name="ach_area_2">城市游侠</string>
     <string name="ach_area_3">广阔天地</string>
@@ -109,6 +114,7 @@
     <string name="ach_area_5">世界引擎</string>
 
     <string name="ach_precise_title">像素猎人</string>
+    <string name="ach_precise_desc">解锁高精度（精确级别）网格的总数量。</string>
     <string name="ach_precise_1">像素学徒</string>
     <string name="ach_precise_2">寻迹者</string>
     <string name="ach_precise_3">细嗅蔷薇</string>
@@ -116,6 +122,7 @@
     <string name="ach_precise_5">夸克微雕师</string>
 
     <string name="ach_blurry_title">迷雾先锋</string>
+    <string name="ach_blurry_desc">解锁低精度（模糊级别）网格的总数量。</string>
     <string name="ach_blurry_1">启程</string>
     <string name="ach_blurry_2">破雾者</string>
     <string name="ach_blurry_3">乘风破浪</string>
@@ -123,6 +130,7 @@
     <string name="ach_blurry_5">苍穹之影</string>
 
     <string name="ach_dist_title">行者无疆</string>
+    <string name="ach_dist_desc">开启定位时，累计移动的物理总距离。</string>
     <string name="ach_dist_1">初识路途</string>
     <string name="ach_dist_2">百里游侠</string>
     <string name="ach_dist_3">千里独行</string>
@@ -130,6 +138,7 @@
     <string name="ach_dist_5">夸父追日</string>
 
     <string name="ach_city_title">地区开拓者</string>
+    <string name="ach_city_desc">留下过足迹的市、县或区级行政区数量。</string>
     <string name="ach_city_1">初来乍到</string>
     <string name="ach_city_2">走南闯北</string>
     <string name="ach_city_3">神州漫步</string>
@@ -137,6 +146,7 @@
     <string name="ach_city_5">大旅行家</string>
 
     <string name="ach_country_title">环球旅行家</string>
+    <string name="ach_country_desc">留下过足迹的国家数量。</string>
     <string name="ach_country_1">本国居民</string>
     <string name="ach_country_2">跨越国界</string>
     <string name="ach_country_3">护照盖满</string>
@@ -146,6 +156,7 @@
     <string name="unit_day">天</string>
 
     <string name="ach_streak_title">恒心守望</string>
+    <string name="ach_streak_desc">连续有开启定位、记录轨迹的天数。</string>
     <string name="ach_streak_1">初窥门径</string>
     <string name="ach_streak_2">持之以恒</string>
     <string name="ach_streak_3">月满之刻</string>
@@ -153,6 +164,7 @@
     <string name="ach_streak_5">岁月史官</string>
 
     <string name="ach_newexp_title">开拓狂热</string>
+    <string name="ach_newexp_desc">连续发现并点亮全新网格的天数。</string>
     <string name="ach_newexp_1">牛刀小试</string>
     <string name="ach_newexp_2">渐入佳境</string>
     <string name="ach_newexp_3">探索不息</string>
@@ -160,6 +172,7 @@
     <string name="ach_newexp_5">开拓狂魔</string>
 
     <string name="ach_noexp_title">宅家隐士</string>
+    <string name="ach_noexp_desc">连续没有发现新网格（保持宅家或走老路）的天数。</string>
     <string name="ach_noexp_1">短暂休憩</string>
     <string name="ach_noexp_2">闭门不出</string>
     <string name="ach_noexp_3">隐居遁世</string>
@@ -167,6 +180,7 @@
     <string name="ach_noexp_5">绝世独立</string>
 
     <string name="ach_visit_title">故地重游</string>
+    <string name="ach_visit_desc">到访同一个区域（模糊网格）的最高累积次数。</string>
     <string name="ach_visit_1">常客</string>
     <string name="ach_visit_2">轻车熟路</string>
     <string name="ach_visit_3">归属感</string>
@@ -174,6 +188,7 @@
     <string name="ach_visit_5">地头蛇</string>
 
     <string name="ach_teleport_title">时空跃迁</string>
+    <string name="ach_teleport_desc">两次连续定位记录之间的单次最远瞬间移动距离。</string>
     <string name="ach_teleport_1">大跨步</string>
     <string name="ach_teleport_2">飞毛腿</string>
     <string name="ach_teleport_3">追风者</string>

@@ -92,6 +92,8 @@
     <string name="achievement_tier_4">Platinum</string>
     <string name="achievement_tier_5">Onyx</string>
     <string name="achievement_test_add">Discover a new achievement (Debug)</string>
+    <string name="achievement_current_process">Current progress</string>
+    <string name="achievement_is_maxlevel">Already full level</string>
 
     <string name="unit_km2">km²</string>
     <string name="unit_count"> </string>
@@ -101,7 +103,10 @@
     <string name="achievement_unlocked">Unlocked</string>
     <string name="achievement_locked">Locked</string>
 
+    <string name="achievement_task_desc">Mission Description</string>
+
     <string name="ach_area_title">Earth Walker</string>
+    <string name="ach_area_desc">Total area explored globally.</string>
     <string name="ach_area_1">First Steps</string>
     <string name="ach_area_2">City Ranger</string>
     <string name="ach_area_3">Wide World</string>
@@ -109,6 +114,7 @@
     <string name="ach_area_5">World Engine</string>
 
     <string name="ach_precise_title">Pixel Hunter</string>
+    <string name="ach_precise_desc">Total number of precise grids unlocked.</string>
     <string name="ach_precise_1">Apprentice</string>
     <string name="ach_precise_2">Tracker</string>
     <string name="ach_precise_3">Detail Seeker</string>
@@ -116,6 +122,7 @@
     <string name="ach_precise_5">Quark Sculptor</string>
 
     <string name="ach_blurry_title">Fog Pioneer</string>
+    <string name="ach_blurry_desc">Total number of blurry grids unlocked.</string>
     <string name="ach_blurry_1">Departure</string>
     <string name="ach_blurry_2">Fog Breaker</string>
     <string name="ach_blurry_3">Wind Rider</string>
@@ -123,6 +130,7 @@
     <string name="ach_blurry_5">Firmament Shadow</string>
 
     <string name="ach_dist_title">Endless Journey</string>
+    <string name="ach_dist_desc">Total physical distance traveled while tracking.</string>
     <string name="ach_dist_1">First Mile</string>
     <string name="ach_dist_2">Hundred Miles</string>
     <string name="ach_dist_3">Lone Wolf</string>
@@ -130,6 +138,7 @@
     <string name="ach_dist_5">Sun Chaser</string>
 
     <string name="ach_city_title">Region Explorer</string>
+    <string name="ach_city_desc">Number of unique districts or counties visited.</string>
     <string name="ach_city_1">Newcomer</string>
     <string name="ach_city_2">Traveler</string>
     <string name="ach_city_3">Wanderer</string>
@@ -137,6 +146,7 @@
     <string name="ach_city_5">Grand Voyager</string>
 
     <string name="ach_country_title">Globetrotter</string>
+    <string name="ach_country_desc">Number of unique countries visited.</string>
     <string name="ach_country_1">Local Resident</string>
     <string name="ach_country_2">Cross Border</string>
     <string name="ach_country_3">Passport Filled</string>
@@ -146,6 +156,7 @@
     <string name="unit_day">Days</string>
 
     <string name="ach_streak_title">Eternal Vigil</string>
+    <string name="ach_streak_desc">Consecutive days of active location tracking.</string>
     <string name="ach_streak_1">First Steps</string>
     <string name="ach_streak_2">Perseverance</string>
     <string name="ach_streak_3">Full Moon Cycle</string>
@@ -153,6 +164,7 @@
     <string name="ach_streak_5">Chronicler of Ages</string>
 
     <string name="ach_newexp_title">Pathfinder Fever</string>
+    <string name="ach_newexp_desc">Consecutive days of discovering new areas.</string>
     <string name="ach_newexp_1">Testing the Waters</string>
     <string name="ach_newexp_2">In the Groove</string>
     <string name="ach_newexp_3">Relentless Discovery</string>
@@ -160,6 +172,7 @@
     <string name="ach_newexp_5">Exploration Maniac</string>
 
     <string name="ach_noexp_title">The Homebound Hermit</string>
+    <string name="ach_noexp_desc">Consecutive days without discovering any new areas.</string>
     <string name="ach_noexp_1">Brief Respite</string>
     <string name="ach_noexp_2">Behind Closed Doors</string>
     <string name="ach_noexp_3">Secluded Solitude</string>
@@ -167,6 +180,7 @@
     <string name="ach_noexp_5">Transcendent Isolation</string>
 
     <string name="ach_visit_title">Sentimental Journey</string>
+    <string name="ach_visit_desc">Maximum number of visits to the exact same area.</string>
     <string name="ach_visit_1">Frequent Visitor</string>
     <string name="ach_visit_2">Well-Traveled</string>
     <string name="ach_visit_3">Sense of Belonging</string>
@@ -174,6 +188,7 @@
     <string name="ach_visit_5">Local Legend</string>
 
     <string name="ach_teleport_title">Chronos Leap</string>
+    <string name="ach_teleport_desc">Longest single jump distance between two tracking records.</string>
     <string name="ach_teleport_1">Giant Stride</string>
     <string name="ach_teleport_2">Fleetfoot</string>
     <string name="ach_teleport_3">Windchaser</string>

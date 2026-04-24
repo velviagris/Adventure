@@ -208,12 +208,38 @@ fun AchievementDetailDialog(state: AchievementViewState, onDismiss: () -> Unit) 
 
                 Spacer(modifier = Modifier.height(16.dp))
 
+                // =====================================
+                // 🌟 新增：高级感“任务描述”卡片区块
+                // =====================================
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(color.copy(alpha = 0.08f), RoundedCornerShape(8.dp))
+                        .padding(12.dp),
+                    horizontalAlignment = Alignment.Start
+                ) {
+                    Text(
+                        text = stringResource(R.string.achievement_task_desc),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = if (isLocked) Color.Gray else color,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = stringResource(state.def.descResId), // 🌟 渲染对应描述
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(20.dp))
+
                 val currentFmt = if (unitStr == "km²" || unitStr == "km") String.format("%.2f", state.currentProgress) else state.currentProgress.toInt().toString()
                 val targetFmt = if (unitStr == "km²" || unitStr == "km") String.format("%.2f", nextTarget) else nextTarget.toInt().toString()
 
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                    Text("当前进度", style = MaterialTheme.typography.labelMedium)
-                    Text(if (isMaxLevel) "已满级" else "$currentFmt / $targetFmt $unitStr", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
+                    Text(stringResource(R.string.achievement_current_process), style = MaterialTheme.typography.labelMedium)
+                    Text(if (isMaxLevel) stringResource(R.string.achievement_is_maxlevel) else "$currentFmt / $targetFmt $unitStr", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
                 }
                 LinearProgressIndicator(progress = { progressRatio }, modifier = Modifier.fillMaxWidth().padding(top = 8.dp).height(8.dp).clip(RoundedCornerShape(4.dp)), color = if (isLocked) Color.Gray else color)
 
