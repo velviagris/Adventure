@@ -51,7 +51,7 @@ class LocationTrackingService : Service() {
     private val CHANNEL_ID = "adventure_tracking_channel"
 
     private lateinit var dailyStatDao: DailyStatDao
-    private var lastLocation: android.location.Location? = null // 🌟 记录上一个点
+    private var lastLocation: android.location.Location? = null // Cache for Euclidean distance calculations between consecutive trajectory points. / 缓存用于计算连续轨迹点间欧式距离的位置数据。
 
     private val activityReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
@@ -63,7 +63,7 @@ class LocationTrackingService : Service() {
     }
 
     private lateinit var userRecordDao: UserRecordDao
-    private var currentUserRecord = UserRecord() // 内存中维护一份热数据
+    private var currentUserRecord = UserRecord() // Hot data state maintained in memory for low-latency access. / 内存中维护的热数据状态，用于低延迟访问。
 
     override fun onCreate() {
         super.onCreate()
@@ -93,17 +93,17 @@ class LocationTrackingService : Service() {
         locationCallback = object : LocationCallback() {
             override fun onLocationResult(locationResult: LocationResult) {
                 for (location in locationResult.locations) {
-                    // 🌟 1. 记录网格 (原有逻辑)
+                    // 1. Grid indexing and persistence. / 网格索引计算与持久化。
                     recordLocation(location.latitude, location.longitude, location.time)
 
-                    // 🌟 2. 计算与上一个点的物理距离
+                    // 2. Compute physical displacement from previous coordinates. / 计算与前序坐标点的物理位移。
                     if (lastLocation != null) {
                         val distanceMeters = lastLocation!!.distanceTo(location)
                         if (distanceMeters > 0) {
                             recordDistance(distanceMeters)
                         }
                     }
-                    // 更新上一个点
+                    // Update reference coordinates for the next interval. / 更新下一周期的参考坐标。
                     lastLocation = location
                 }
             }
@@ -142,13 +142,13 @@ class LocationTrackingService : Service() {
         val dateString = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault()).format(java.util.Date())
 
         serviceScope.launch {
-            // 1. 累加总距离
+            // 1. Accumulate total displacement metrics. / 累加总位移指标。
             val stat = dailyStatDao.getDailyStat(dateString) ?: DailyStat(dateString)
             stat.totalDistanceKm += distanceKm
             stat.isTrackingActive = true
             dailyStatDao.insertDailyStat(stat)
 
-            // 2. 🌟 极限状态检测：破了我的“单次瞬间位移”记录吗？
+            // 2. Extreme value detection: Update maximum instantaneous displacement record. / 峰值检测：更新单次瞬时位移记录。
             if (distanceKm > currentUserRecord.maxSingleMoveDistanceKm) {
                 currentUserRecord.maxSingleMoveDistanceKm = distanceKm
                 userRecordDao.insertRecord(currentUserRecord)
@@ -230,38 +230,38 @@ class LocationTrackingService : Service() {
             val dao = database.exploredGridDao()
 
             // =====================================
-            // 🌟 1. 记录模糊网格及访问次数计算逻辑
+            // 1. Grid indexing and revisit frequency calculation logic. / 网格索引及访问频次计算逻辑。
             // =====================================
             val blurryGridIndex = GridHelper.getGridIndex(lat, lon, false)
             val existingBlurry = dao.getGrid(blurryGridIndex)
 
             if (existingBlurry == null) {
-                // 首次来到这个模糊网格，新建记录 (初始访问次数为 1)
+                // Initialize record for newly discovered coarse grid (Initial visit count = 1). / 首次发现该粗略网格，初始化记录（初始访问频次为1）。
                 dao.insertGrid(ExploredGrid(blurryGridIndex, 0, 0, timeMs, visitCount = 1))
 
-                // 触发 DailyStat 的全新网格计数
+                // Increment discovery metrics in DailyStat. / 递增每日统计中的新网格发现计数。
                 val dateString = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault()).format(java.util.Date(timeMs))
                 val stat = dailyStatDao.getDailyStat(dateString) ?: DailyStat(dateString)
                 stat.newGridsCount += 1
                 stat.isTrackingActive = true
                 dailyStatDao.insertDailyStat(stat)
             } else {
-                // 这个网格以前来过。我们检查是不是“刚刚从其他网格跨越过来的”？
+                // Grid re-entry detection: Verify if transition occurred from a different grid. / 网格重入检测：校验是否从不同网格单元发生迁移。
                 val lastGrid = currentUserRecord.lastBlurryGridId
                 if (lastGrid.isNotEmpty() && lastGrid != blurryGridIndex) {
-                    // 🌟 判定成功：从别的网格走回了这片老区域，访问次数 +1！
+                    // Logic for revisit increment: Transition from an external grid back to a previously explored area. / 重访递增逻辑：从外部网格迁回已知区域。
                     dao.incrementGridVisit(blurryGridIndex)
                 }
             }
 
-            // 更新状态机：无论怎样，现在我的当前模糊网格就是它了
+            // Update state machine: Current grid becomes the state reference for future transitions. / 更新状态机：当前网格作为后续迁移的状态参考。
             if (currentUserRecord.lastBlurryGridId != blurryGridIndex) {
                 currentUserRecord.lastBlurryGridId = blurryGridIndex
-                userRecordDao.insertRecord(currentUserRecord) // 持久化状态
+                userRecordDao.insertRecord(currentUserRecord) // Persist current state. / 持久化当前状态。
             }
 
             // =====================================
-            // 🌟 2. 记录高精网格 (如果是高精模式)
+            // 2. High-precision grid indexing (if operational mode permits). / 高精度网格索引记录（若运行模式允许）。
             // =====================================
             if (isPreciseMode) {
                 val preciseGridIndex = GridHelper.getGridIndex(lat, lon, true)

@@ -4,6 +4,10 @@ import kotlin.math.*
 
 object GridHelper {
 
+    /**
+     * Computes the grid index based on geographic coordinates and resolution level.
+     * 基于地理坐标及分辨率等级计算网格索引。
+     */
     fun getGridIndex(lat: Double, lng: Double, isPrecise: Boolean): String {
         val zoom = if (isPrecise) 18 else 14
         val latRad = lat * PI / 180.0
@@ -42,22 +46,29 @@ object GridHelper {
         }
     }
 
-    // 辅助计算：通过高精度 ID 推算出它的父级模糊网格 ID
+    /**
+     * Derives the parent (coarse resolution) grid identifier from a high-precision grid index.
+     * 从高精度网格索引推导其父级（粗略分辨率）网格标识符。
+     */
     private fun getParentBlurryId(preciseIndex: String): String {
         val parts = preciseIndex.split("_")
         val x = parts[1].toInt()
         val y = parts[2].toInt()
-        // 倍数关系：2^(18-14) = 16
+        // Resolution factor: 2^(18-14) = 16. / 分辨率缩放因子：2^(18-14) = 16。
         return "14_${x / 16}_${y / 16}"
     }
 
-    // 🌟 核心算法 1：生成【全球深灰迷雾】（只挖不重叠的洞）
+    /**
+     * Core Algorithm 1: Generates Global Fog GeoJSON with non-overlapping boolean subtractions.
+     * 核心算法 1：生成包含非重叠布尔减法的全球迷雾 GeoJSON。
+     */
     fun buildGlobalAdventureGeoJson(blurry: List<com.velviagris.adventure.data.ExploredGrid>, precise: List<com.velviagris.adventure.data.ExploredGrid>): String {
         val outerRing = "[[-180.0, -85.0], [180.0, -85.0], [180.0, 85.0], [-180.0, 85.0], [-180.0, -85.0]]"
 
         val blurrySet = blurry.map { it.gridIndex }.toSet()
 
-        // 挑出那些“没有父级模糊网格”的孤儿高精度网格
+        // Filter high-precision grids that lack a corresponding explored parent grid (Orphaned grids).
+        // 筛选缺乏对应已探索父网格的高精度网格（孤立网格）。
         val orphanPrecise = precise.filter { p -> !blurrySet.contains(getParentBlurryId(p.gridIndex)) }
 
         val blurryHoles = blurry.map { b ->
@@ -76,19 +87,23 @@ object GridHelper {
         return """{"type": "FeatureCollection", "features": [{"type": "Feature", "geometry": {"type": "Polygon", "coordinates": $coordinates}}]}"""
     }
 
-    // 🌟 核心算法 2：生成【带洞的浅灰模糊补丁】
+    /**
+     * Core Algorithm 2: Generates regional "Blurry Patches" with interior precise grid subtractions.
+     * 核心算法 2：生成包含内部高精度网格扣除项的区域性“模糊补丁”。
+     */
     fun buildBlurryPatchGeoJson(blurry: List<com.velviagris.adventure.data.ExploredGrid>, precise: List<com.velviagris.adventure.data.ExploredGrid>): String {
         if (blurry.isEmpty()) return """{"type": "FeatureCollection", "features": []}"""
 
-        // 把高精度网格按照它们的“模糊父级”分组
+        // Group high-precision grid entities by their respective parent coarse grid identifiers.
+        // 将高精度网格实体按其对应的父级粗略网格标识符进行分组。
         val preciseByParent = precise.groupBy { getParentBlurryId(it.gridIndex) }
 
         val features = blurry.joinToString(",") { b ->
-            // 外圈：模糊网格自己 (逆时针)
+            // Exterior boundary: The coarse grid polygon (Counter-clockwise). / 外部边界：粗略网格多边形（逆时针）。
             val outerRing = getGridPolygon(b.gridIndex, clockwise = false)
             val outerStr = "[" + outerRing.joinToString(",") { "[${it[0]}, ${it[1]}]" } + "]"
 
-            // 挖洞：属于这个模糊网格里面的高精度网格 (顺时针)
+            // Interior subtractions: Precise grids encapsulated within the coarse grid (Clockwise). / 内部扣除：封装在该粗略网格内的高精度网格（顺时针）。
             val children = preciseByParent[b.gridIndex] ?: emptyList()
             val holesStr = children.joinToString(",") { p ->
                 val innerRing = getGridPolygon(p.gridIndex, clockwise = true)
@@ -102,8 +117,12 @@ object GridHelper {
     }
 
     /**
-     * 计算某个网格的真实物理面积（单位：平方公里）
-     * 采用地球椭球体和墨卡托投影反解公式，纬度越高，网格实际物理面积越小。
+     * Computes the geodetic area of a grid cell (Unit: Square Kilometers).
+     * Calculates the physical area based on Earth's ellipsoid and Mercator projection inverse formulas.
+     * The effective area decreases as latitude increases.
+     * 计算网格单元的大地面积（单位：平方公里）。
+     * 基于地球椭球体及墨卡托投影反解公式计算物理面积。
+     * 有效面积随纬度增加而减小。
      */
     fun getGridAreaKm2(gridIndex: String): Double {
         val parts = gridIndex.split("_")
@@ -112,16 +131,18 @@ object GridHelper {
         val y = parts[2].toInt()
 
         val n = 2.0.pow(zoom)
-        // 计算该网格顶部的纬度（弧度）
+        // Derive latitude at the grid's northern boundary (Radians). / 推导网格北边界的纬度（弧度）。
         val latRad = atan(sinh(PI * (1.0 - 2.0 * y / n)))
 
-        // 核心公式：基于地球赤道半径(6378137m)，计算该纬度下的像素分辨率，进而求得网格边长
-        // 这里简化为将网格视为正方形（在微小尺度下误差可忽略）
+        // Computation: Determines pixel resolution at current latitude based on Earth's equatorial radius (6378137m).
+        // Calculations assume local square geometry (approximation error is negligible at micro-scales).
+        // 计算：基于地球赤道半径（6378137m）确定当前纬度的像素分辨率。
+        // 计算假设局部为正方形几何结构（微观尺度下近似误差可忽略）。
         val earthRadius = 6378137.0
         val tileLengthMeters = (cos(latRad) * 2 * PI * earthRadius) / n
 
         val areaSquareMeters = tileLengthMeters * tileLengthMeters
-        return areaSquareMeters / 1_000_000.0 // 转换为平方公里 (km²)
+        return areaSquareMeters / 1_000_000.0 // Unit conversion to Square Kilometers. / 转换为平方公里。
     }
 
     private fun tile2Lon(x: Int, n: Double) = x / n * 360.0 - 180.0

@@ -74,7 +74,8 @@ object AchievementRegistry {
     )
 
     // ==========================================
-    // 🌟 全自动巡检引擎：不管是在后台走路，还是在导入数据，都只调用这一个方法！
+    // Automated Evaluation Engine: Processes achievement logic for background tracking and data synchronization.
+    // 自动巡检引擎：处理后台追踪及数据同步场景下的成就解锁逻辑。
     // ==========================================
     suspend fun evaluateAndUnlock(
         context: Context,
@@ -89,7 +90,8 @@ object AchievementRegistry {
                 val threshold = def.thresholds[lvl - 1]
                 val achId = "${def.categoryId}_$lvl"
 
-                // 如果达标且未领取
+                // Check if requirements are met and achievement is not yet unlocked.
+                // 检查是否满足阈值且尚未解锁该成就。
                 if (progress >= threshold && !existingIds.contains(achId)) {
                     val title = context.getString(def.titleResId)
                     val tierName = context.getString(def.tierNameResIds[lvl - 1])
@@ -98,11 +100,12 @@ object AchievementRegistry {
                     val reqStr = if (unitStr == "km²" || unitStr == "km") String.format("%.0f", threshold) else threshold.toInt().toString()
                     val desc = context.getString(R.string.achievement_desc_format, tierName, reqStr, unitStr)
 
-                    // 触发回调入库
+                    // Execute callback for persistence storage.
+                    // 执行回调以进行持久化存储。
                     unlockAction(
                         Achievement(
                             id = achId,
-                            title = title, // 数据库里依然存完整的字符串，兼容 JSON 备份
+                            title = title, // Stored as complete string for backup compatibility. / 存储完整字符串以保证备份兼容性。
                             description = desc,
                             level = lvl,
                             iconRes = achId,

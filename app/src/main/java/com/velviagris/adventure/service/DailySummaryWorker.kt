@@ -19,7 +19,8 @@ class DailySummaryWorker(appContext: Context, workerParams: WorkerParameters) :
         val database = AdventureDatabase.getDatabase(context)
         val dao = database.exploredGridDao()
 
-        // 1. 获取今天凌晨 00:00:00 的时间戳
+        // 1. Calculate the Unix timestamp for the start of the current day (00:00:00).
+        // 1. 计算当日零点（00:00:00）的 Unix 时间戳。
         val calendar = Calendar.getInstance().apply {
             set(Calendar.HOUR_OF_DAY, 0)
             set(Calendar.MINUTE, 0)
@@ -30,7 +31,8 @@ class DailySummaryWorker(appContext: Context, workerParams: WorkerParameters) :
         val endOfToday = calendar.apply { add(Calendar.DAY_OF_YEAR, 1) }.timeInMillis
 
 
-        // 2. 从数据库查询今天新增的网格
+        // 2. Query grid entities discovered within the specified temporal range.
+        // 2. 查询在指定时间范围内发现的网格实体。
         val gridsToday = dao.getGridsExploredByTime(startOfToday, endOfToday)
 
         var preciseArea = 0.0
@@ -41,7 +43,8 @@ class DailySummaryWorker(appContext: Context, workerParams: WorkerParameters) :
             if (grid.accuracyLevel == 1) preciseArea += area else blurryArea += area
         }
 
-        // 3. 组装文案
+        // 3. Construct localized summary strings based on computed metrics.
+        // 3. 基于计算指标构建本地化摘要字符串。
         val contentText = when {
             preciseArea > 0 && blurryArea > 0 -> context.getString(R.string.summary_both, preciseArea, blurryArea)
             preciseArea > 0 -> context.getString(R.string.summary_precise, preciseArea)
@@ -49,7 +52,8 @@ class DailySummaryWorker(appContext: Context, workerParams: WorkerParameters) :
             else -> context.getString(R.string.summary_none)
         }
 
-        // 4. 发送通知
+        // 4. Dispatch system notification for user feedback.
+        // 4. 发送系统通知以进行用户反馈。
         showNotification(context, contentText)
 
         return Result.success()
@@ -72,7 +76,7 @@ class DailySummaryWorker(appContext: Context, workerParams: WorkerParameters) :
             .setContentText(text)
             .setSmallIcon(android.R.drawable.ic_menu_today)
             .setAutoCancel(true)
-            .setStyle(NotificationCompat.BigTextStyle().bigText(text)) // 支持长文本换行展示
+            .setStyle(NotificationCompat.BigTextStyle().bigText(text)) // Support for multi-line text expansion. / 支持长文本展开展示。
             .build()
 
         notificationManager.notify(1002, notification)

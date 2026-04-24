@@ -11,16 +11,27 @@ import kotlinx.coroutines.flow.stateIn
 
 class MapViewModel(private val dao: ExploredGridDao) : ViewModel() {
 
-    // 1. 监听并暴露“模糊/省电模式”的网格数据 (accuracyLevel = 0)
+    /**
+     * Observes and exposes grid entities for "Coarse/Power-saving" mode (accuracyLevel = 0).
+     * 观察并暴露“粗略/省电模式”下的网格实体（精度等级 = 0）。
+     */
     val blurryGrids: StateFlow<List<ExploredGrid>> = dao.getGridsByAccuracyFlow(0)
         .stateIn(
             scope = viewModelScope,
-            // 巧妙的性能优化：只有当地图页显示时才监听数据库，切到后台5秒后自动停止，极致省电
+            /**
+             * Performance optimization: The upstream database flow remains active only while the Map UI is visible.
+             * Automatically terminates subscription 5 seconds after transitioning to the background to minimize energy consumption.
+             * 性能优化：上游数据库流仅在地图 UI 可见时保持活跃。
+             * 进入后台 5 秒后自动终止订阅，以最大限度降低能耗。
+             */
             started = SharingStarted.WhileSubscribed(5000),
             initialValue = emptyList()
         )
 
-    // 2. 监听并暴露“精确/旅游模式”的网格数据 (accuracyLevel = 1)
+    /**
+     * Observes and exposes grid entities for "Precise/Navigation" mode (accuracyLevel = 1).
+     * 观察并暴露“高精/导航模式”下的网格实体（精度等级 = 1）。
+     */
     val preciseGrids: StateFlow<List<ExploredGrid>> = dao.getGridsByAccuracyFlow(1)
         .stateIn(
             scope = viewModelScope,
@@ -29,7 +40,10 @@ class MapViewModel(private val dao: ExploredGridDao) : ViewModel() {
         )
 }
 
-// 同样的，我们需要一个工厂来把 DAO 传给 ViewModel
+/**
+ * Boilerplate factory implementation for providing the [ExploredGridDao] dependency to [MapViewModel].
+ * 用于向 [MapViewModel] 提供 [ExploredGridDao] 依赖的工厂模式实现。
+ */
 class MapViewModelFactory(private val dao: ExploredGridDao) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(MapViewModel::class.java)) {

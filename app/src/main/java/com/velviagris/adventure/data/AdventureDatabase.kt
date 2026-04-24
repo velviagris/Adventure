@@ -23,14 +23,19 @@ abstract class AdventureDatabase : RoomDatabase() {
         @Volatile
         private var INSTANCE: AdventureDatabase? = null
 
+        /**
+         * Returns a singleton instance of the database provider.
+         * 返回数据库提供程序的单例实例。
+         */
         fun getDatabase(context: Context): AdventureDatabase {
             return INSTANCE ?: synchronized(this) {
                 val instance = Room.databaseBuilder(
                     context.applicationContext,
                     AdventureDatabase::class.java,
-                    "adventure_database" // 数据库文件名
+                    "adventure_database" // Persistence storage filename. / 持久化存储文件名。
                 )
-                    // 🌟 允许破坏性迁移：数据库结构改变时自动重建表（适合开发阶段）
+                    // Configures fallback behavior during schema version mismatch.
+                    // 配置模式版本不匹配时的回退行为。
                     .fallbackToDestructiveMigration(false)
                     .build()
                 INSTANCE = instance
