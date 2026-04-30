@@ -9,8 +9,8 @@
     <string name="tracking_channel_name">轨迹记录服务</string>
     <string name="tracking_channel_desc">用于在后台持续记录你的探索轨迹</string>
     <string name="tracking_notification_title">世界冒险正在记录</string>
-    <string name="tracking_mode_precise">📍 高精度旅游模式运行中...</string>
-    <string name="tracking_mode_battery">🔋 省电日常模式运行中...</string>
+    <string name="tracking_mode_precise">📍 高精度旅游模式运行中</string>
+    <string name="tracking_mode_battery">🔋 省电日常模式运行中</string>
     <string name="tracking_paused_still">💤 手机静止，定位已休眠 (极致省电)</string>
 
     <string name="region_not_downloaded">未下载区域</string>

@@ -9,8 +9,8 @@
     <string name="tracking_channel_name">Tracking Service</string>
     <string name="tracking_channel_desc">Records your exploration trail in the background</string>
     <string name="tracking_notification_title">Adventure is recording</string>
-    <string name="tracking_mode_precise">📍 Precise travel mode running...</string>
-    <string name="tracking_mode_battery">🔋 Battery saver mode running...</string>
+    <string name="tracking_mode_precise">📍 Precise travel mode running</string>
+    <string name="tracking_mode_battery">🔋 Battery saver mode running</string>
     <string name="tracking_paused_still">💤 Phone is still, location paused (Battery saved)</string>
 
     <string name="region_not_downloaded">Area not downloaded</string>
