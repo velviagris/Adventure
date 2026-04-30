@@ -249,18 +249,21 @@ class SettingsViewModel(
                             val list = mutableListOf<RegionProgress>()
                             for (i in 0 until arr.length()) {
                                 val obj = arr.getJSONObject(i)
-                                list.add(
-                                    RegionProgress(
-                                        // 🌟 兼容性写法：优先读取 placeId，如果是以前旧版备份里只有 id 字符串，则转成 hash 存为 Long
-                                        osmId = obj.optLong("osmId", obj.optString("id").hashCode().toLong()),
-                                        regionName = obj.getString("name"),
-                                        regionType = obj.getInt("type"),
-                                        addressType = obj.getString("addressType"),
-                                        totalAreaKm2 = obj.getDouble("totalArea"),
-                                        exploredAreaKm2 = obj.getDouble("expArea"),
-                                        firstVisitTime = obj.getLong("firstTime")
+                                val osmId = obj.optLong("osmId")
+                                if (osmId != 0L){
+                                    list.add(
+                                        RegionProgress(
+                                            // 舍弃旧格式数据：优先读取 osmId，如果是以前旧版备份里只有 id 字符串，不存入
+                                            osmId = osmId,
+                                            regionName = obj.getString("name"),
+                                            regionType = obj.getInt("type"),
+                                            addressType = obj.getString("addressType"),
+                                            totalAreaKm2 = obj.getDouble("totalArea"),
+                                            exploredAreaKm2 = obj.getDouble("expArea"),
+                                            firstVisitTime = obj.getLong("firstTime")
+                                        )
                                     )
-                                )
+                                }
                             }
                             db.regionProgressDao().insertRegions(list)
                         }
