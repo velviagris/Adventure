@@ -8,11 +8,19 @@ import androidx.room.PrimaryKey
 data class UserRecord(
     @PrimaryKey val id: Int = 1, // 永远为 1，确保单行记录
     @ColumnInfo(name = "last_blurry_grid_id")
-    var lastBlurryGridId: String = "", // 🌟 用于判定是否“跨越边界”的核心状态
+    var lastBlurryGridId: String = "",
     @ColumnInfo(name = "max_single_move_distance_km")
-    var maxSingleMoveDistanceKm: Double = 0.0, // 🌟 两次定位间的最大瞬间移动距离
+    var maxSingleMoveDistanceKm: Double = 0.0, // 时空跃迁
+    @ColumnInfo(name = "check_in_streak")
+    var checkInStreak: Int = 0,               // 恒心守望
+    @ColumnInfo(name = "new_exp_streak")
+    var newExpStreak: Int = 0,                // 开拓狂热
+    @ColumnInfo(name = "no_new_exp_streak")
+    var noNewExpStreak: Int = 0,              // 宅家隐士
+    @ColumnInfo(name = "max_visit_count")
+    var maxVisitCount: Int = 0,               // 故地重游
     @ColumnInfo(name = "max_altitude_meters")
-    var maxAltitudeMeters: Double = 0.0, // 未来可用于“登峰造极”成就
+    var maxAltitudeMeters: Double = 0.0,
     @ColumnInfo(name = "top_speed_kmh")
-    var topSpeedKmh: Double = 0.0 // 未来可用于“速度狂飙”成就
+    var topSpeedKmh: Double = 0.0
 )

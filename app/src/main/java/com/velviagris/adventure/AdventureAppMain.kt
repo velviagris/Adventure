@@ -51,7 +51,6 @@ fun AdventureAppMain(database: AdventureDatabase, preferences: AppPreferences) {
     val achievementViewModel: AchievementViewModel = viewModel(
         factory = AchievementViewModelFactory(database.achievementDao())
     )
-    // 🌟 直接传入 database 而不是 dao
     val settingsViewModel: SettingsViewModel = viewModel(
         factory = object : ViewModelProvider.Factory {
             override fun <T : ViewModel> create(modelClass: Class<T>): T {
@@ -92,7 +91,6 @@ fun AdventureAppMain(database: AdventureDatabase, preferences: AppPreferences) {
         ) {
             composable(Screen.Home.route) { HomeScreen(viewModel = homeViewModel) }
             composable(Screen.Map.route) { MapScreen(viewModel = mapViewModel) }
-            // 🌟 传接完整的 6 个指标给成就页
             composable(Screen.Achievement.route) {
                 val area by homeViewModel.exploredAreaKm2.collectAsState()
                 val precise by homeViewModel.preciseGrids.collectAsState()
@@ -100,6 +98,8 @@ fun AdventureAppMain(database: AdventureDatabase, preferences: AppPreferences) {
                 val distance by homeViewModel.totalDistanceKm.collectAsState()
                 val cities by homeViewModel.cityCount.collectAsState()
                 val countries by homeViewModel.countryCount.collectAsState()
+                // 🌟 将打包好的 UserRecord 对象提供给成就界面
+                val userRecord by homeViewModel.userRecordFlow.collectAsState()
 
                 AchievementScreen(
                     viewModel = achievementViewModel,
@@ -108,7 +108,8 @@ fun AdventureAppMain(database: AdventureDatabase, preferences: AppPreferences) {
                     currentPreciseCount = precise.size,
                     currentBlurryCount = blurry.size,
                     currentCityCount = cities,
-                    currentCountryCount = countries
+                    currentCountryCount = countries,
+                    userRecord = userRecord // 🌟 新增参数
                 )
             }
             composable(Screen.Settings.route) { SettingsScreen(viewModel = settingsViewModel) }

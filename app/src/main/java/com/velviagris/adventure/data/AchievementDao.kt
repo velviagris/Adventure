@@ -8,17 +8,19 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface AchievementDao {
-    // 按照获得时间从新到旧排列，Flow 会自动监听变化
     @Query("SELECT * FROM achievements ORDER BY earned_time DESC")
     fun getAllAchievementsFlow(): Flow<List<Achievement>>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertAchievement(achievement: Achievement)
 
-    // 🌟 用于全库备份
     @Query("SELECT * FROM achievements")
     suspend fun getAllAchievements(): List<Achievement>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertAchievements(achievements: List<Achievement>)
+
+    // 🌟 新增：用于在数据丢失时修正（降级）勋章等级
+    @Query("DELETE FROM achievements WHERE id = :id")
+    suspend fun deleteAchievementById(id: String)
 }

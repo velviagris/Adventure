@@ -13,46 +13,68 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 
-// 🌟 新增：成就组装包，用于将同名成就打包
 data class AchievementGroup(
     val categoryTitle: String,
-    val highestAchievement: Achievement, // 当前展示的最高牌子
-    val history: List<Achievement>       // 解锁历史 (包含低级别和当前级别)
+    val highestAchievement: Achievement,
+    val history: List<Achievement>
 )
 
 class AchievementViewModel(private val dao: AchievementDao) : ViewModel() {
 
-//    // 暴露成就流给 UI
-//    val achievements: StateFlow<List<Achievement>> = dao.getAllAchievementsFlow()
-//        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
-
-    // 🌟 核心修改：将扁平的 List 转换为分组的 List
     val groupedAchievements: StateFlow<List<AchievementGroup>> = dao.getAllAchievementsFlow()
         .map { list ->
-            list.groupBy { it.title } // 按成就大类名称（如：大地漫步者）分组
+            list.groupBy { it.title }
                 .map { (title, groupList) ->
-                    // 将组内成就按等级从高到低排序
                     val sortedGroup = groupList.sortedByDescending { it.level }
                     AchievementGroup(
                         categoryTitle = title,
-                        highestAchievement = sortedGroup.first(), // 拿到最高等级的牌子
-                        history = sortedGroup.sortedBy { it.level } // 历史记录按等级从低到高排列（铜 -> 银 -> 金）
+                        highestAchievement = sortedGroup.first(),
+                        history = sortedGroup.sortedBy { it.level }
                     )
                 }
-                // 最后，整个成就墙按“最高牌子的获得时间”从近到远排序
                 .sortedByDescending { it.highestAchievement.earnedTime }
         }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
-    // 🌟 将判断逻辑完全交给公共引擎
+
+    // 🌟 带有自我修复（降级）机制的同步引擎
     fun syncAchievements(context: Context, metrics: Map<String, Double>) {
         viewModelScope.launch(Dispatchers.IO) {
             val existingIds = dao.getAllAchievements().map { it.id }.toSet()
 
-            // 一句话解决！
-            AchievementRegistry.evaluateAndUnlock(context, metrics, existingIds) { newAch ->
-                dao.insertAchievement(newAch)
+            AchievementRegistry.definitions.forEach { def ->
+                val progress = metrics[def.categoryId] ?: 0.0
+
+                for (lvl in 1..5) {
+                    val threshold = def.thresholds[lvl - 1]
+                    val achId = "${def.categoryId}_$lvl"
+
+                    // 情况 A：进度达标且未领牌 -> 补发
+                    if (progress >= threshold && !existingIds.contains(achId)) {
+                        val title = context.getString(def.titleResId)
+                        val tierName = context.getString(def.tierNameResIds[lvl - 1])
+                        val unitStr = context.getString(def.unitResId)
+
+                        val reqStr = if (unitStr == "km²" || unitStr == "km") String.format("%.0f", threshold) else threshold.toInt().toString()
+                        val desc = context.getString(R.string.achievement_desc_format, tierName, reqStr, unitStr)
+
+                        dao.insertAchievement(
+                            Achievement(
+                                id = achId,
+                                title = title,
+                                description = desc,
+                                level = lvl,
+                                iconRes = achId,
+                                earnedTime = System.currentTimeMillis()
+                            )
+                        )
+                    }
+
+                    // 🌟 情况 B：进度不达标但已有牌 -> 删除（自我修复/降级）
+                    if (progress < threshold && existingIds.contains(achId)) {
+                        dao.deleteAchievementById(achId)
+                    }
+                }
             }
         }
     }
