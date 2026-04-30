@@ -134,7 +134,6 @@ fun SettingsScreen(viewModel: SettingsViewModel) {
                         onCheckedChange = { isChecked ->
                             if (isChecked) {
                                 if (
-                                    Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
                                     ContextCompat.checkSelfPermission(
                                         context,
                                         Manifest.permission.POST_NOTIFICATIONS
