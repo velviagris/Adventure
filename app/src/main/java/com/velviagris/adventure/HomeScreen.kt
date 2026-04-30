@@ -380,12 +380,8 @@ fun HomeScreen(viewModel: HomeViewModel) {
                                     Manifest.permission.ACCESS_FINE_LOCATION,
                                     Manifest.permission.ACCESS_COARSE_LOCATION
                                 )
-                                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
-                                    permissionsToRequest.add(Manifest.permission.POST_NOTIFICATIONS)
-                                }
-                                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
-                                    permissionsToRequest.add(Manifest.permission.ACTIVITY_RECOGNITION)
-                                }
+                                permissionsToRequest.add(Manifest.permission.POST_NOTIFICATIONS)
+                                permissionsToRequest.add(Manifest.permission.ACTIVITY_RECOGNITION)
 
                                 val hasLocationPermission = ContextCompat.checkSelfPermission(
                                     context,
