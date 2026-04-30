@@ -37,6 +37,8 @@ fun HomeScreen(viewModel: HomeViewModel) {
     val context = LocalContext.current
     val isTrackingEnabled by viewModel.isTrackingEnabled.collectAsState()
     val isPreciseMode by viewModel.isPreciseMode.collectAsState()
+    // 🌟 新增：获取全局 UserRecord 状态
+    val userRecord by viewModel.userRecordFlow.collectAsState()
 
     val coroutineScope = rememberCoroutineScope()
     val fusedLocationClient = remember { LocationServices.getFusedLocationProviderClient(context) }
@@ -92,6 +94,34 @@ fun HomeScreen(viewModel: HomeViewModel) {
         }
     }
 
+    // ====================================================================
+    // 🌟 修复 1：状态守卫 (State Guard)
+    // 确保应用每次打开时，只要开关处于 true，强制验证并拉起后台服务
+    // ====================================================================
+    LaunchedEffect(isTrackingEnabled) {
+        if (isTrackingEnabled) {
+            val hasLocationPermission = ContextCompat.checkSelfPermission(
+                context, Manifest.permission.ACCESS_FINE_LOCATION
+            ) == PackageManager.PERMISSION_GRANTED ||
+                    ContextCompat.checkSelfPermission(
+                        context, Manifest.permission.ACCESS_COARSE_LOCATION
+                    ) == PackageManager.PERMISSION_GRANTED
+
+            if (hasLocationPermission) {
+                val serviceIntent = Intent(context, LocationTrackingService::class.java).apply {
+                    putExtra("EXTRA_IS_PRECISE", isPreciseMode)
+                }
+                ContextCompat.startForegroundService(context, serviceIntent)
+                AppLogger.i("HomeScreen", "Service auto-started from UI state to ensure synchronization")
+            } else {
+                // 如果用户在系统设置里剥夺了权限，自动把 UI 开关关掉
+                viewModel.toggleTracking(false)
+                AppLogger.w("HomeScreen", "Tracking disabled due to missing permission on startup")
+            }
+        }
+    }
+    // ====================================================================
+
     // 初始化读取缓存
     LaunchedEffect(Unit) {
         cityGeoJson = GeoJsonHelper.getCachedBoundary(context, "city")
@@ -100,17 +130,11 @@ fun HomeScreen(viewModel: HomeViewModel) {
     }
 
     // ====================================================================
-    // 🌟 核心魔法：电子围栏自动刷新机制
-    // 当用户的网格数据变化时，检查是否走出了当前的市级边界
+    // 🌟 修复 2：空间变化触发的电子围栏 (Spatial Trigger)
+    // 监听 `userRecord.lastBlurryGridId`。即使走老路，只要跨越了 1.2km 的网格，
+    // 就会稳定触发越界检查，彻底解决地区卡片死机不刷新的问题。
     // ====================================================================
-    val totalGrids = blurryGridsList.size + preciseGridsList.size
-    var lastAutoFetchTime by remember { mutableLongStateOf(0L) }
-
-    LaunchedEffect(totalGrids) {
-        val now = System.currentTimeMillis()
-        // 防抖策略：限制至少 30 秒才允许向定位芯片索要一次快照，防止过度耗电
-        if (now - lastAutoFetchTime < 30_000) return@LaunchedEffect
-
+    LaunchedEffect(userRecord.lastBlurryGridId) {
         if (ContextCompat.checkSelfPermission(
                 context,
                 Manifest.permission.ACCESS_FINE_LOCATION
@@ -129,31 +153,16 @@ fun HomeScreen(viewModel: HomeViewModel) {
                     )
 
                     if (isOutsideLocal) {
-                        lastAutoFetchTime = now
-                        AppLogger.i("HomeScreen", "User moved outside cached local boundary, refreshing boundary data")
+                        AppLogger.i("HomeScreen", "User crossed boundary or cache is empty, refreshing GeoJSON data")
                         coroutineScope.launch {
-                            // 越界了！静默在后台下载新区域的数据
-                            // 🌟 恢复为 zoom=10，抓取【市级】完整边界
                             cityGeoJson = GeoJsonHelper.downloadAndCacheBoundary(
-                                context,
-                                lat,
-                                lon,
-                                10,
-                                "city"
+                                context, lat, lon, 10, "city"
                             )
                             stateGeoJson = GeoJsonHelper.downloadAndCacheBoundary(
-                                context,
-                                lat,
-                                lon,
-                                5,
-                                "state"
+                                context, lat, lon, 5, "state"
                             )
                             countryGeoJson = GeoJsonHelper.downloadAndCacheBoundary(
-                                context,
-                                lat,
-                                lon,
-                                3,
-                                "country"
+                                context, lat, lon, 3, "country"
                             )
                         }
                     }
@@ -163,16 +172,12 @@ fun HomeScreen(viewModel: HomeViewModel) {
     }
     // ====================================================================
 
-    // ==========================================
-    // 🌟 解析本地城市层级名称 (彻底解决张冠李戴问题)
-    // ==========================================
+    // 🌟 解析本地城市层级名称 (保持你的高级 place_id 和中文支持逻辑)
     LaunchedEffect(blurryGridsList, preciseGridsList, cityGeoJson) {
         if (cityGeoJson != null) {
             val json = cityGeoJson!!
             val addressObj = json.optJSONObject("address")
 
-            // 🌟 核心修复：直接读取多边形本体的官方名称！
-            // 保证你看到的面积，绝对100%属于这个名字对应的物理边界。
             currentCityName = json.optString("name").takeIf { it.isNotEmpty() }
                 ?: addressObj?.optString("city")?.takeIf { it.isNotEmpty() }
                         ?: addressObj?.optString("town")?.takeIf { it.isNotEmpty() }
@@ -210,7 +215,6 @@ fun HomeScreen(viewModel: HomeViewModel) {
                 if (stats.second > 0) {
                     stateProgress = stats.first / stats.second
                 }
-                // 🌟 核心拦截器：如果名字是占位符或未知，坚决不写入数据库！
                 if (currentStateName != unknownStr && currentStateName != context.getString(R.string.region_not_downloaded)) {
                     viewModel.recordRegionVisit(json, 3, currentStateName, stateExploredArea)
                 }
@@ -218,7 +222,6 @@ fun HomeScreen(viewModel: HomeViewModel) {
         }
     }
 
-    // 🌟 解析国家层级名称
     LaunchedEffect(blurryGridsList, preciseGridsList, countryGeoJson) {
         if (countryGeoJson != null) {
             val json = countryGeoJson!!
@@ -264,27 +267,14 @@ fun HomeScreen(viewModel: HomeViewModel) {
                         fusedLocationClient.lastLocation.addOnSuccessListener { location ->
                             if (location != null) {
                                 coroutineScope.launch {
-                                    // 🌟 手动刷新同样改回 Zoom 10 抓取市级边界
                                     cityGeoJson = GeoJsonHelper.downloadAndCacheBoundary(
-                                        context,
-                                        location.latitude,
-                                        location.longitude,
-                                        10,
-                                        "city"
+                                        context, location.latitude, location.longitude, 10, "city"
                                     )
                                     stateGeoJson = GeoJsonHelper.downloadAndCacheBoundary(
-                                        context,
-                                        location.latitude,
-                                        location.longitude,
-                                        5,
-                                        "state"
+                                        context, location.latitude, location.longitude, 5, "state"
                                     )
                                     countryGeoJson = GeoJsonHelper.downloadAndCacheBoundary(
-                                        context,
-                                        location.latitude,
-                                        location.longitude,
-                                        3,
-                                        "country"
+                                        context, location.latitude, location.longitude, 3, "country"
                                     )
                                     isDownloading = false
                                     AppLogger.i("HomeScreen", "Manual boundary refresh completed")

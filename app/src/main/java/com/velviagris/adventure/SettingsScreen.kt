@@ -182,6 +182,23 @@ fun SettingsScreen(viewModel: SettingsViewModel) {
             HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp), thickness = 0.5.dp)
 
             ListItem(
+                headlineContent = { Text(stringResource(R.string.settings_import_title)) },
+                supportingContent = { Text(stringResource(R.string.settings_import_desc)) },
+                leadingContent = {
+                    Icon(
+                        Icons.Filled.Download,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                },
+                modifier = Modifier.clickable {
+                    importLauncher.launch(arrayOf("application/json"))
+                }
+            )
+
+            HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp), thickness = 0.5.dp)
+
+            ListItem(
                 headlineContent = { Text(stringResource(R.string.settings_export_logs_title)) },
                 supportingContent = { Text(stringResource(R.string.settings_export_logs_desc)) },
                 leadingContent = {
@@ -196,23 +213,6 @@ fun SettingsScreen(viewModel: SettingsViewModel) {
                         SimpleDateFormat("yyyyMMdd_HHmm", Locale.getDefault()).format(Date())
                     }.txt"
                     exportLogsLauncher.launch(fileName)
-                }
-            )
-
-            HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp), thickness = 0.5.dp)
-
-            ListItem(
-                headlineContent = { Text(stringResource(R.string.settings_import_title)) },
-                supportingContent = { Text(stringResource(R.string.settings_import_desc)) },
-                leadingContent = {
-                    Icon(
-                        Icons.Filled.Download,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary
-                    )
-                },
-                modifier = Modifier.clickable {
-                    importLauncher.launch(arrayOf("application/json"))
                 }
             )
 

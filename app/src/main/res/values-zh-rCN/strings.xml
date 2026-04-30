@@ -68,7 +68,7 @@
     <string name="settings_import_desc">导入之前的 JSON 备份文件 (覆盖重复项)</string>
     <string name="toast_import_success">成功导入 %d 条数据！</string>
     <string name="toast_import_fail">导入失败，请检查文件</string>
-    <string name="settings_version">世界冒险 v1.0.0</string>
+    <string name="settings_version">世界冒险 v0.1.0</string>
     <string name="settings_notifications">消息提醒</string>
     <string name="settings_summary_title">每日探索总结</string>
     <string name="settings_summary_desc">每天晚上 21 点推送今日的探索成就</string>
