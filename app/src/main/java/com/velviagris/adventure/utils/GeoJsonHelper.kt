@@ -95,7 +95,7 @@ object GeoJsonHelper {
             val request = Request.Builder()
                 .url(urlString)
                 .header("User-Agent", "Adventure/1.0") // Nominatim 必须包含合规的 UA
-                .header("Accept-Language", "en-US,en;q=0.9") // 明确语言偏好
+//                .header("Accept-Language", "en-US,en;q=0.9") // 明确语言偏好
                 .build()
 
             try {

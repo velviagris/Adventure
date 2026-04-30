@@ -13,11 +13,11 @@ interface RegionProgressDao {
     suspend fun insertRegionIfNotExists(region: RegionProgress)
 
     // 更新某个区域的已探索面积
-    @Query("UPDATE region_progress SET explored_area_km2 = :exploredArea, total_area_km2 = :totalArea WHERE region_id = :regionId")
-    suspend fun updateExploredArea(regionId: String, totalArea: Double, exploredArea: Double)
+    @Query("UPDATE region_progress SET region_name = :regionName, explored_area_km2 = :exploredArea, total_area_km2 = :totalArea WHERE osm_id = :osmId")
+    suspend fun updateExploredArea(osmId: Long, regionName: String, totalArea: Double, exploredArea: Double)
 
     // 🌟 专供成就引擎使用：极其轻量级的 COUNT 查询
-    @Query("SELECT COUNT(*) FROM region_progress WHERE region_type = :type")
+    @Query("SELECT COUNT(DISTINCT region_name) FROM region_progress WHERE region_type = :type")
     fun getRegionCountFlow(type: Int): Flow<Int>
 
     // 🌟 用于全库备份

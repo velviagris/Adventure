@@ -112,10 +112,11 @@ class SettingsViewModel(
                     }
                     rootObj.put("daily_stats", dailyStatsArray)
 
+                    // 4. 导出行政区进度
                     val regionsArray = JSONArray()
                     db.regionProgressDao().getAllRegions().forEach {
                         regionsArray.put(JSONObject().apply {
-                            put("id", it.regionId)
+                            put("osmId", it.osmId)
                             put("name", it.regionName)
                             put("type", it.regionType)
                             put("addressType", it.addressType)
@@ -242,6 +243,7 @@ class SettingsViewModel(
                             db.dailyStatDao().insertDailyStats(list)
                         }
 
+                        // 4. 恢复区域
                         if (rootObj.has("regions")) {
                             val arr = rootObj.getJSONArray("regions")
                             val list = mutableListOf<RegionProgress>()
@@ -249,7 +251,8 @@ class SettingsViewModel(
                                 val obj = arr.getJSONObject(i)
                                 list.add(
                                     RegionProgress(
-                                        regionId = obj.getString("id"),
+                                        // 🌟 兼容性写法：优先读取 placeId，如果是以前旧版备份里只有 id 字符串，则转成 hash 存为 Long
+                                        osmId = obj.optLong("osmId", obj.optString("id").hashCode().toLong()),
                                         regionName = obj.getString("name"),
                                         regionType = obj.getInt("type"),
                                         addressType = obj.getString("addressType"),

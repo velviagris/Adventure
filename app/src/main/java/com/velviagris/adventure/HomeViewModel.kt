@@ -67,21 +67,18 @@ class HomeViewModel(
 
     fun recordRegionVisit(json: JSONObject, type: Int, name: String, currentExploredArea: Double) {
         viewModelScope.launch {
-            val addressObj = json.optJSONObject("address")
-            val state = addressObj?.optString("state") ?: "UnknownState"
-            val country = addressObj?.optString("country") ?: "UnknownCountry"
+            // 获取原生的 osm_id，如果获取不到则放弃入库
+            val osmId = json.optLong("osm_id", -1L)
+            if (osmId == -1L) return@launch
 
-            // 提取 OSM 真实的地理实体类型，如果没找到默认给个 "region"
             val addressType = json.optString("addresstype", "region")
-
-            val stableRegionId = "${type}_${name}_${state}_${country}"
 
             val stats = GeoJsonHelper.calculateExplorationStats(emptyList(), emptyList(), json)
             val totalArea = stats.second
 
             // 存入真实类型
             val region = RegionProgress(
-                regionId = stableRegionId,
+                osmId = osmId,
                 regionName = name,
                 regionType = type,
                 addressType = addressType,
@@ -89,10 +86,11 @@ class HomeViewModel(
                 exploredAreaKm2 = currentExploredArea
             )
             regionProgressDao.insertRegionIfNotExists(region)
-            regionProgressDao.updateExploredArea(stableRegionId, totalArea, currentExploredArea)
+            regionProgressDao.updateExploredArea(osmId, name, totalArea, currentExploredArea)
+
             AppLogger.d(
                 "HomeViewModel",
-                "Region progress updated: regionId=$stableRegionId exploredArea=$currentExploredArea totalArea=$totalArea"
+                "Region progress updated: osmId=$osmId exploredArea=$currentExploredArea totalArea=$totalArea"
             )
         }
     }
