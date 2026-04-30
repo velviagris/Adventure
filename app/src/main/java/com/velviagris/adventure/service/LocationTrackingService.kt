@@ -17,6 +17,7 @@ import android.os.Looper
 import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
 import com.google.android.gms.location.*
+import com.velviagris.adventure.MainActivity
 import com.velviagris.adventure.R
 import com.velviagris.adventure.data.ExploredGrid
 import com.velviagris.adventure.data.AdventureDatabase
@@ -49,6 +50,8 @@ class LocationTrackingService : Service() {
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val NOTIFICATION_ID = 1001
     private val CHANNEL_ID = "adventure_tracking_channel"
+
+    private val ACTION_SWITCH_MODE = "com.velviagris.adventure.ACTION_SWITCH_MODE"
 
     private lateinit var dailyStatDao: DailyStatDao
     private var lastLocation: android.location.Location? = null // Cache for Euclidean distance calculations between consecutive trajectory points. / 缓存用于计算连续轨迹点间欧式距离的位置数据。
@@ -111,7 +114,25 @@ class LocationTrackingService : Service() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        isPreciseMode = intent?.getBooleanExtra("EXTRA_IS_PRECISE", false) ?: false
+        // 🌟 新增拦截逻辑：如果是点击通知栏"切换模式"按钮进来的
+        if (intent?.action == ACTION_SWITCH_MODE) {
+            isPreciseMode = !isPreciseMode
+
+            // 异步更新 DataStore，让 HomeScreen UI 里的 Switch 也能自动跟着变！
+            serviceScope.launch {
+                com.velviagris.adventure.utils.AppPreferences(applicationContext).setPreciseMode(isPreciseMode)
+            }
+
+            // 重启位置请求以应用新的精度，并更新通知栏文案
+            requestLocationUpdates()
+            updateNotification(getNotificationText())
+            AppLogger.i("LocationTrackingService", "Mode switched via notification: preciseMode=$isPreciseMode")
+
+            return START_STICKY
+        }
+
+        // --- 以下是原有的正常启动逻辑 ---
+        isPreciseMode = intent?.getBooleanExtra("EXTRA_IS_PRECISE", isPreciseMode) ?: isPreciseMode
         AppLogger.i("LocationTrackingService", "Service started, preciseMode=$isPreciseMode")
 
         isLocationPaused = false
@@ -277,12 +298,37 @@ class LocationTrackingService : Service() {
         notificationManager.notify(NOTIFICATION_ID, buildNotification(text))
     }
 
-    private fun buildNotification(text: String) = NotificationCompat.Builder(this, CHANNEL_ID)
-        .setContentTitle(getString(R.string.tracking_notification_title))
-        .setContentText(text)
-        .setSmallIcon(android.R.drawable.ic_menu_mylocation)
-        .setOngoing(true)
-        .build()
+    private fun buildNotification(text: String): android.app.Notification {
+        // 🌟 1. 组装点击通知主体 -> 打开 MainActivity 的 Intent
+        val contentIntent = Intent(this, MainActivity::class.java).apply {
+            // 这两个 Flag 确保如果 App 已经在后台，会直接唤醒它而不是新建一个页面
+            flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
+        }
+        val pendingContentIntent = PendingIntent.getActivity(
+            this, 0, contentIntent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        // 🌟 2. 组装点击“切换模式”按钮 -> 触发 Service 的 Intent
+        val switchIntent = Intent(this, LocationTrackingService::class.java).apply {
+            action = ACTION_SWITCH_MODE
+        }
+        val pendingSwitchIntent = PendingIntent.getService(
+            this, 1, switchIntent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        return NotificationCompat.Builder(this, CHANNEL_ID)
+            .setContentTitle(getString(R.string.tracking_notification_title))
+            .setContentText(text)
+            .setSmallIcon(android.R.drawable.ic_menu_mylocation)
+            .setOngoing(true)
+            .setContentIntent(pendingContentIntent) // 绑定点击主体事件
+            .addAction(
+                android.R.drawable.ic_menu_compass, // 按钮图标
+                getString(R.string.action_switch_mode), // 按钮文案
+                pendingSwitchIntent // 绑定点击按钮事件
+            )
+            .build()
+    }
 
     private fun getNotificationText() = if (isPreciseMode) getString(R.string.tracking_mode_precise) else getString(R.string.tracking_mode_battery)
 

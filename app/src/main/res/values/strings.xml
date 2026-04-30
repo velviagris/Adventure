@@ -31,6 +31,7 @@
     <string name="tracking_active_title">Exploration Active</string>
     <string name="tracking_paused_title">Exploration Paused</string>
     <string name="tracking_switch_desc">When enabled, your trail is recorded in the background</string>
+    <string name="action_switch_mode">Switch Mode</string>
 
     <string name="accuracy_setting_title">Location Accuracy</string>
     <string name="accuracy_precise_desc">High accuracy for travel (More battery)</string>

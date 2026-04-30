@@ -31,6 +31,7 @@
     <string name="tracking_active_title">探索进行中</string>
     <string name="tracking_paused_title">探索已暂停</string>
     <string name="tracking_switch_desc">开启后将在后台持续记录你的轨迹</string>
+    <string name="action_switch_mode">切换模式</string>
 
     <string name="accuracy_setting_title">定位精度</string>
     <string name="accuracy_precise_desc">高精度旅游打卡 (更耗电)</string>
