@@ -48,7 +48,7 @@
     <string name="format_progress_local">%.4f%%</string>
 
     <string name="map_title">Exploration Area</string>
-    <string name="toast_searching_gps">Searching for GPS signal...</string>
+    <string name="toast_searching_gps">Searching for GPS signal</string>
     <string name="content_desc_my_location">Back to current location</string>
     <string name="grid_info_precise">📍 Deeply explored at: %s</string>
     <string name="grid_info_blurry">🌫️ Passed through here at: %s</string>

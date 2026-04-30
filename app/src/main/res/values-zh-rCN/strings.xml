@@ -48,7 +48,7 @@
     <string name="format_progress_local">%.4f%%</string>
 
     <string name="map_title">探索区域</string>
-    <string name="toast_searching_gps">正在搜寻GPS信号...</string>
+    <string name="toast_searching_gps">正在搜寻GPS信号</string>
     <string name="content_desc_my_location">回到当前位置</string>
     <string name="grid_info_precise">📍 深度探索于：%s</string>
     <string name="grid_info_blurry">🌫️ 途经此处于：%s</string>
