@@ -41,6 +41,7 @@ import com.velviagris.adventure.ui.viewmodels.SettingsViewModel
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import com.velviagris.adventure.BuildConfig
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -221,7 +222,7 @@ fun SettingsScreen(viewModel: SettingsViewModel) {
             Spacer(modifier = Modifier.weight(1f))
 
             Text(
-                text = stringResource(R.string.settings_version),
+                text = stringResource(R.string.settings_version, BuildConfig.VERSION_NAME),
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(16.dp)

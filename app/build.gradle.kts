@@ -14,7 +14,7 @@ android {
         minSdk = 33
         targetSdk = 36
         versionCode = 1
-        versionName = "0.1.0"
+        versionName = "0.2.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -47,6 +47,7 @@ android {
         jvmTarget = "11"
     }
     buildFeatures {
+        buildConfig = true
         compose = true
     }
 }
@@ -61,22 +62,16 @@ dependencies {
     implementation(libs.androidx.ui.graphics)
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
-    // 1. Navigation Compose (用于底部导航)
     implementation(libs.androidx.navigation.compose)
-    // 2. Material 3 (如果新建项目已包含可跳过，确保版本较新以支持更丰富的 M3 特性)
     implementation(libs.material3)
-    // 3. 预留：Uber H3 (空间网格算法)
-//    implementation(libs.h3)
-    // 4. 预留：MapLibre GL (用于矢量地图渲染，替代传统 OSMDroid)
     implementation(libs.android.sdk)
-    // 2. 🌟 替换为全新的官方 MapLibre Compose 封装库
     implementation(libs.compose.maplibre.compose)
     implementation(libs.androidx.material.icons.extended)
     implementation(libs.play.services.location)
     val room_version = "2.6.1"
     implementation("androidx.room:room-runtime:$room_version")
-    implementation("androidx.room:room-ktx:$room_version") // 提供协程和 Flow 支持
-    ksp("androidx.room:room-compiler:$room_version")     // 注解处理器
+    implementation("androidx.room:room-ktx:$room_version")
+    ksp("androidx.room:room-compiler:$room_version")
     implementation(libs.androidx.lifecycle.viewmodel.compose)
     implementation(libs.androidx.datastore.preferences)
     implementation(libs.jts.core)
