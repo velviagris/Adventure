@@ -54,6 +54,8 @@
     <string name="grid_info_precise">📍 Deeply explored at: %s</string>
     <string name="grid_info_blurry">🌫️ Passed through here at: %s</string>
     <string name="time_early_record">Early Record</string>
+    <string name="dialog_delete_grid_title">Delete Exploration</string>
+    <string name="dialog_delete_grid_message">Are you sure you want to delete this explored area? It will be covered by fog again.</string>
 
     <string name="settings_title">Settings</string>
     <string name="settings_data_management">Data Management</string>

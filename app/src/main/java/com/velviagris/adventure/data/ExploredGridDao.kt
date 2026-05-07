@@ -83,4 +83,11 @@ interface ExploredGridDao {
      */
     @Query("SELECT MAX(visit_count) FROM explored_grids")
     fun getMaxVisitCountFlow(): Flow<Int?>
+
+    /**
+     * Deletes a specific grid entity by its index identifier.
+     * 根据索引标识符删除特定的网格实体。
+     */
+    @Query("DELETE FROM explored_grids WHERE grid_index = :index")
+    suspend fun deleteGrid(index: String)
 }

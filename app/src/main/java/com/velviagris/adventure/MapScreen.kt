@@ -58,6 +58,7 @@ fun MapScreen(viewModel: MapViewModel) {
     val preciseGridsMap = remember(preciseGrids) { preciseGrids.associateBy { it.gridIndex } }
 
     var clickedGridInfo by remember { mutableStateOf<String?>(null) }
+    var gridToDelete by remember { mutableStateOf<String?>(null) }
 
     LaunchedEffect(clickedGridInfo) {
         if (clickedGridInfo != null) {
@@ -180,6 +181,30 @@ fun MapScreen(viewModel: MapViewModel) {
                                 ClickResult.Pass
                             }
                         }
+                    },
+                    onMapLongClick = { position, _ ->
+                        val lat = position.latitude
+                        val lon = position.longitude
+
+                        // 优先检查最高层的高精网格
+                        val preciseId = GridHelper.getGridIndex(lat, lon, isPrecise = true)
+                        val preciseGrid = preciseGridsMap[preciseId]
+
+                        if (preciseGrid != null) {
+                            gridToDelete = preciseId
+                            ClickResult.Consume
+                        } else {
+                            // 如果没有高精网格，则检查底层的模糊网格
+                            val blurryId = GridHelper.getGridIndex(lat, lon, isPrecise = false)
+                            val blurryGrid = blurryGridsMap[blurryId]
+
+                            if (blurryGrid != null) {
+                                gridToDelete = blurryId
+                                ClickResult.Consume
+                            } else {
+                                ClickResult.Pass
+                            }
+                        }
                     }
                 ) {
                     val fogSource = rememberGeoJsonSource(data = GeoJsonData.JsonString(globalFogGeoJson))
@@ -225,6 +250,27 @@ fun MapScreen(viewModel: MapViewModel) {
                         fontWeight = FontWeight.Bold
                     )
                 }
+            }
+
+            if (gridToDelete != null) {
+                AlertDialog(
+                    onDismissRequest = { gridToDelete = null },
+                    title = { Text(stringResource(R.string.dialog_delete_grid_title)) },
+                    text = { Text(stringResource(R.string.dialog_delete_grid_message)) },
+                    confirmButton = {
+                        TextButton(onClick = {
+                            gridToDelete?.let { viewModel.deleteGrid(it) }
+                            gridToDelete = null // 关闭弹窗
+                        }) {
+                            Text(stringResource(R.string.dialog_confirm)) // 复用你现有的确定文本
+                        }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = { gridToDelete = null }) {
+                            Text(stringResource(R.string.dialog_cancel)) // 复用你现有的取消文本
+                        }
+                    }
+                )
             }
         }
     }

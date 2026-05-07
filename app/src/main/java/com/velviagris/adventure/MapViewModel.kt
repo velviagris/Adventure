@@ -8,6 +8,7 @@ import com.velviagris.adventure.data.ExploredGridDao
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 
 class MapViewModel(private val dao: ExploredGridDao) : ViewModel() {
 
@@ -38,6 +39,16 @@ class MapViewModel(private val dao: ExploredGridDao) : ViewModel() {
             started = SharingStarted.WhileSubscribed(5000),
             initialValue = emptyList()
         )
+
+    /**
+     * Delete explored area from the database.
+     * 删除已探索网格
+     */
+    fun deleteGrid(gridIndex: String) {
+        viewModelScope.launch {
+            dao.deleteGrid(gridIndex)
+        }
+    }
 }
 
 /**

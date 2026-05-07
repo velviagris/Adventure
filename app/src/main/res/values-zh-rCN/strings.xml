@@ -54,6 +54,8 @@
     <string name="grid_info_precise">📍 深度探索于：%s</string>
     <string name="grid_info_blurry">🌫️ 途经此处于：%s</string>
     <string name="time_early_record">早期记录</string>
+    <string name="dialog_delete_grid_title">删除探索记录</string>
+    <string name="dialog_delete_grid_message">确定要删除该区域的探索记录吗？删除后该区域将重新被迷雾覆盖。</string>
 
     <string name="settings_title">设置</string>
     <string name="settings_data_management">数据管理</string>
