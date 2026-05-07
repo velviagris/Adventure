@@ -1,4 +1,4 @@
-package com.velviagris.adventure
+package com.velviagris.adventure.ui.screens
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -25,6 +25,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.velviagris.adventure.ui.viewmodels.AchievementViewModel
+import com.velviagris.adventure.R
 import com.velviagris.adventure.data.UserRecord
 import com.velviagris.adventure.utils.AchievementDef
 import com.velviagris.adventure.utils.AchievementRegistry

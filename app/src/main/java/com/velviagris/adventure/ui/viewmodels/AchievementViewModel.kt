@@ -1,9 +1,10 @@
-package com.velviagris.adventure
+package com.velviagris.adventure.ui.viewmodels
 
 import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import com.velviagris.adventure.R
 import com.velviagris.adventure.data.Achievement
 import com.velviagris.adventure.data.AchievementDao
 import com.velviagris.adventure.utils.AchievementRegistry

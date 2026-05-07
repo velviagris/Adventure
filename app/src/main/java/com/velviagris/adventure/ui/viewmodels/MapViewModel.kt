@@ -1,4 +1,4 @@
-package com.velviagris.adventure
+package com.velviagris.adventure.ui.viewmodels
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider

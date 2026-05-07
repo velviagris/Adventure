@@ -1,4 +1,4 @@
-package com.velviagris.adventure
+package com.velviagris.adventure.ui.viewmodels
 
 import android.content.ContentResolver
 import android.content.Context

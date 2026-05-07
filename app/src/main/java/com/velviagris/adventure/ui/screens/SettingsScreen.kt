@@ -1,12 +1,14 @@
-package com.velviagris.adventure
+package com.velviagris.adventure.ui.screens
 
 import android.Manifest
+import android.content.pm.PackageManager
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -34,6 +36,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
+import com.velviagris.adventure.R
+import com.velviagris.adventure.ui.viewmodels.SettingsViewModel
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -108,7 +112,7 @@ fun SettingsScreen(viewModel: SettingsViewModel) {
             TopAppBar(
                 title = { Text(stringResource(R.string.settings_title), fontWeight = FontWeight.Bold) },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background),
-                windowInsets = androidx.compose.foundation.layout.WindowInsets(0.dp)
+                windowInsets = WindowInsets(0.dp)
             )
         }
     ) { innerPadding ->
@@ -136,7 +140,7 @@ fun SettingsScreen(viewModel: SettingsViewModel) {
                                     ContextCompat.checkSelfPermission(
                                         context,
                                         Manifest.permission.POST_NOTIFICATIONS
-                                    ) != android.content.pm.PackageManager.PERMISSION_GRANTED
+                                    ) != PackageManager.PERMISSION_GRANTED
                                 ) {
                                     permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
                                 } else {

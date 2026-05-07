@@ -1,4 +1,4 @@
-package com.velviagris.adventure
+package com.velviagris.adventure.ui.viewmodels
 
 import android.content.Context
 import androidx.lifecycle.ViewModel
@@ -13,6 +13,10 @@ import com.velviagris.adventure.utils.GridHelper
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import org.json.JSONObject
+import java.text.SimpleDateFormat
+import java.util.Calendar
+import java.util.Date
+import java.util.Locale
 
 class HomeViewModel(
     private val context: Context,
@@ -101,45 +105,45 @@ class HomeViewModel(
         if (statsList.isEmpty()) return Triple(0, 0, 0)
 
         val statMap = statsList.associateBy { it.dateString }
-        val sdf = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault())
-        val todayStr = sdf.format(java.util.Date())
+        val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+        val todayStr = sdf.format(Date())
 
-        val cal = java.util.Calendar.getInstance()
-        cal.add(java.util.Calendar.DAY_OF_MONTH, -1)
+        val cal = Calendar.getInstance()
+        cal.add(Calendar.DAY_OF_MONTH, -1)
         val yesterdayStr = sdf.format(cal.time)
 
         var checkInStreak = 0
-        var c1 = java.util.Calendar.getInstance()
+        var c1 = Calendar.getInstance()
         if (statMap[todayStr]?.isTrackingActive != true) c1.time = sdf.parse(yesterdayStr)!!
         while (true) {
             val d = sdf.format(c1.time)
             if (statMap[d]?.isTrackingActive == true) {
                 checkInStreak++
-                c1.add(java.util.Calendar.DAY_OF_MONTH, -1)
+                c1.add(Calendar.DAY_OF_MONTH, -1)
             } else break
         }
 
         var newExpStreak = 0
-        var c2 = java.util.Calendar.getInstance()
+        var c2 = Calendar.getInstance()
         if ((statMap[todayStr]?.newGridsCount ?: 0) == 0) c2.time = sdf.parse(yesterdayStr)!!
         while (true) {
             val d = sdf.format(c2.time)
             if ((statMap[d]?.newGridsCount ?: 0) > 0) {
                 newExpStreak++
-                c2.add(java.util.Calendar.DAY_OF_MONTH, -1)
+                c2.add(Calendar.DAY_OF_MONTH, -1)
             } else break
         }
 
         var noNewExpStreak = 0
         val firstDateStr = statsList.last().dateString
         val firstDate = sdf.parse(firstDateStr)!!
-        var c3 = java.util.Calendar.getInstance()
+        var c3 = Calendar.getInstance()
 
         while (!c3.time.before(firstDate)) {
             val d = sdf.format(c3.time)
             if ((statMap[d]?.newGridsCount ?: 0) == 0) {
                 noNewExpStreak++
-                c3.add(java.util.Calendar.DAY_OF_MONTH, -1)
+                c3.add(Calendar.DAY_OF_MONTH, -1)
             } else break
         }
 

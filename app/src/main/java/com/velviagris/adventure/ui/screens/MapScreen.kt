@@ -1,4 +1,4 @@
-package com.velviagris.adventure
+package com.velviagris.adventure.ui.screens
 
 import android.Manifest
 import android.content.Context
@@ -26,6 +26,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import com.google.android.gms.location.LocationServices
+import com.velviagris.adventure.ui.viewmodels.MapViewModel
+import com.velviagris.adventure.R
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.maplibre.compose.map.MaplibreMap

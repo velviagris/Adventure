@@ -19,6 +19,17 @@ import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.*
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.velviagris.adventure.data.AdventureDatabase
+import com.velviagris.adventure.ui.screens.AchievementScreen
+import com.velviagris.adventure.ui.screens.HomeScreen
+import com.velviagris.adventure.ui.screens.MapScreen
+import com.velviagris.adventure.ui.screens.SettingsScreen
+import com.velviagris.adventure.ui.viewmodels.AchievementViewModel
+import com.velviagris.adventure.ui.viewmodels.AchievementViewModelFactory
+import com.velviagris.adventure.ui.viewmodels.HomeViewModel
+import com.velviagris.adventure.ui.viewmodels.HomeViewModelFactory
+import com.velviagris.adventure.ui.viewmodels.MapViewModel
+import com.velviagris.adventure.ui.viewmodels.MapViewModelFactory
+import com.velviagris.adventure.ui.viewmodels.SettingsViewModel
 import com.velviagris.adventure.utils.AppPreferences
 
 sealed class Screen(val route: String, val titleResId: Int, val icon: ImageVector) {
