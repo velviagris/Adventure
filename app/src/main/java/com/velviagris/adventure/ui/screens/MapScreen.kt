@@ -28,6 +28,7 @@ import androidx.core.content.ContextCompat
 import com.google.android.gms.location.LocationServices
 import com.velviagris.adventure.ui.viewmodels.MapViewModel
 import com.velviagris.adventure.R
+import com.velviagris.adventure.utils.AppLogger
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.maplibre.compose.map.MaplibreMap
@@ -69,7 +70,6 @@ fun MapScreen(viewModel: MapViewModel) {
         }
     }
 
-    val allExploredGrids = blurryGrids + preciseGrids
     val globalFogGeoJson by remember(blurryGrids, preciseGrids) {
         derivedStateOf { GridHelper.buildGlobalAdventureGeoJson(blurryGrids, preciseGrids) }
     }
@@ -105,7 +105,9 @@ fun MapScreen(viewModel: MapViewModel) {
                         )
                     }
                 }
-            } catch (e: SecurityException) { }
+            } catch (e: SecurityException) {
+                AppLogger.i("MapScreen", e.message.toString())
+            }
         }
     }
 
@@ -134,7 +136,9 @@ fun MapScreen(viewModel: MapViewModel) {
                                     Toast.makeText(context, toastSearchingGPS, Toast.LENGTH_SHORT).show()
                                 }
                             }
-                        } catch (e: SecurityException) { }
+                        } catch (e: SecurityException) {
+                            AppLogger.i("MapScreen", e.message.toString())
+                        }
                     }
                 }
             ) {

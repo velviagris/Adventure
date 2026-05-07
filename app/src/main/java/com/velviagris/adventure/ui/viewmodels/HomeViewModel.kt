@@ -113,7 +113,7 @@ class HomeViewModel(
         val yesterdayStr = sdf.format(cal.time)
 
         var checkInStreak = 0
-        var c1 = Calendar.getInstance()
+        val c1 = Calendar.getInstance()
         if (statMap[todayStr]?.isTrackingActive != true) c1.time = sdf.parse(yesterdayStr)!!
         while (true) {
             val d = sdf.format(c1.time)
@@ -124,7 +124,7 @@ class HomeViewModel(
         }
 
         var newExpStreak = 0
-        var c2 = Calendar.getInstance()
+        val c2 = Calendar.getInstance()
         if ((statMap[todayStr]?.newGridsCount ?: 0) == 0) c2.time = sdf.parse(yesterdayStr)!!
         while (true) {
             val d = sdf.format(c2.time)
@@ -137,7 +137,7 @@ class HomeViewModel(
         var noNewExpStreak = 0
         val firstDateStr = statsList.last().dateString
         val firstDate = sdf.parse(firstDateStr)!!
-        var c3 = Calendar.getInstance()
+        val c3 = Calendar.getInstance()
 
         while (!c3.time.before(firstDate)) {
             val d = sdf.format(c3.time)
