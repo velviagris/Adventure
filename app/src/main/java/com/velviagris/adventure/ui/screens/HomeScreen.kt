@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -38,7 +39,6 @@ fun HomeScreen(viewModel: HomeViewModel) {
     val context = LocalContext.current
     val isTrackingEnabled by viewModel.isTrackingEnabled.collectAsState()
     val isPreciseMode by viewModel.isPreciseMode.collectAsState()
-    // 🌟 新增：获取全局 UserRecord 状态
     val userRecord by viewModel.userRecordFlow.collectAsState()
 
     val coroutineScope = rememberCoroutineScope()
@@ -52,7 +52,6 @@ fun HomeScreen(viewModel: HomeViewModel) {
     var stateGeoJson by remember { mutableStateOf<JSONObject?>(null) }
     var countryGeoJson by remember { mutableStateOf<JSONObject?>(null) }
 
-    // Pre-resolve strings to use inside Coroutines safely
     val unknownStr = stringResource(R.string.unknown)
     val unknownStateStr = stringResource(R.string.unknown_state)
 
@@ -70,6 +69,9 @@ fun HomeScreen(viewModel: HomeViewModel) {
 
     var showDialog by remember { mutableStateOf(false) }
     var isDownloading by remember { mutableStateOf(false) }
+
+    var showTrackingInfoDialog by remember { mutableStateOf(false) }
+    var showPreciseInfoDialog by remember { mutableStateOf(false) }
 
     val toastTrackingStarted = stringResource(R.string.toast_tracking_started)
     val toastPermissionRequired = stringResource(R.string.toast_permission_required)
@@ -95,10 +97,6 @@ fun HomeScreen(viewModel: HomeViewModel) {
         }
     }
 
-    // ====================================================================
-    // 🌟 修复 1：状态守卫 (State Guard)
-    // 确保应用每次打开时，只要开关处于 true，强制验证并拉起后台服务
-    // ====================================================================
     LaunchedEffect(isTrackingEnabled) {
         if (isTrackingEnabled) {
             val hasLocationPermission = ContextCompat.checkSelfPermission(
@@ -115,26 +113,18 @@ fun HomeScreen(viewModel: HomeViewModel) {
                 ContextCompat.startForegroundService(context, serviceIntent)
                 AppLogger.i("HomeScreen", "Service auto-started from UI state to ensure synchronization")
             } else {
-                // 如果用户在系统设置里剥夺了权限，自动把 UI 开关关掉
                 viewModel.toggleTracking(false)
                 AppLogger.w("HomeScreen", "Tracking disabled due to missing permission on startup")
             }
         }
     }
-    // ====================================================================
 
-    // 初始化读取缓存
     LaunchedEffect(Unit) {
         cityGeoJson = GeoJsonHelper.getCachedBoundary(context, "city")
         stateGeoJson = GeoJsonHelper.getCachedBoundary(context, "state")
         countryGeoJson = GeoJsonHelper.getCachedBoundary(context, "country")
     }
 
-    // ====================================================================
-    // 🌟 修复 2：空间变化触发的电子围栏 (Spatial Trigger)
-    // 监听 `userRecord.lastBlurryGridId`。即使走老路，只要跨越了 1.2km 的网格，
-    // 就会稳定触发越界检查，彻底解决地区卡片死机不刷新的问题。
-    // ====================================================================
     LaunchedEffect(userRecord.lastBlurryGridId) {
         if (ContextCompat.checkSelfPermission(
                 context,
@@ -146,34 +136,23 @@ fun HomeScreen(viewModel: HomeViewModel) {
                     val lat = location.latitude
                     val lon = location.longitude
 
-                    // 判断当前位置是否还在我们缓存的“城市多边形”内
                     val isOutsideLocal = cityGeoJson == null || !GeoJsonHelper.isPointInPolygon(
-                        lat,
-                        lon,
-                        cityGeoJson!!
+                        lat, lon, cityGeoJson!!
                     )
 
                     if (isOutsideLocal) {
                         AppLogger.i("HomeScreen", "User crossed boundary or cache is empty, refreshing GeoJSON data")
                         coroutineScope.launch {
-                            cityGeoJson = GeoJsonHelper.downloadAndCacheBoundary(
-                                context, lat, lon, 10, "city"
-                            )
-                            stateGeoJson = GeoJsonHelper.downloadAndCacheBoundary(
-                                context, lat, lon, 5, "state"
-                            )
-                            countryGeoJson = GeoJsonHelper.downloadAndCacheBoundary(
-                                context, lat, lon, 3, "country"
-                            )
+                            cityGeoJson = GeoJsonHelper.downloadAndCacheBoundary(context, lat, lon, 10, "city")
+                            stateGeoJson = GeoJsonHelper.downloadAndCacheBoundary(context, lat, lon, 5, "state")
+                            countryGeoJson = GeoJsonHelper.downloadAndCacheBoundary(context, lat, lon, 3, "country")
                         }
                     }
                 }
             }
         }
     }
-    // ====================================================================
 
-    // 🌟 解析本地城市层级名称 (保持你的高级 place_id 和中文支持逻辑)
     LaunchedEffect(blurryGridsList, preciseGridsList, cityGeoJson) {
         if (cityGeoJson != null) {
             val json = cityGeoJson!!
@@ -182,16 +161,12 @@ fun HomeScreen(viewModel: HomeViewModel) {
             currentCityName = json.optString("name").takeIf { it.isNotEmpty() }
                 ?: addressObj?.optString("city")?.takeIf { it.isNotEmpty() }
                         ?: addressObj?.optString("town")?.takeIf { it.isNotEmpty() }
-                        ?: json.optString("display_name", unknownStr).split(",").firstOrNull()
-                    ?.trim() ?: unknownStr
+                        ?: json.optString("display_name", unknownStr).split(",").firstOrNull()?.trim() ?: unknownStr
 
             withContext(Dispatchers.Default) {
-                val stats =
-                    GeoJsonHelper.calculateExplorationStats(blurryGridsList, preciseGridsList, json)
+                val stats = GeoJsonHelper.calculateExplorationStats(blurryGridsList, preciseGridsList, json)
                 cityExploredArea = stats.first
-                if (stats.second > 0) {
-                    cityProgress = stats.first / stats.second
-                }
+                if (stats.second > 0) cityProgress = stats.first / stats.second
 
                 if (currentCityName != unknownStr && currentCityName != context.getString(R.string.region_not_downloaded)) {
                     viewModel.recordRegionVisit(json, 2, currentCityName, cityExploredArea)
@@ -210,12 +185,10 @@ fun HomeScreen(viewModel: HomeViewModel) {
                         ?: unknownStateStr
 
             withContext(Dispatchers.Default) {
-                val stats =
-                    GeoJsonHelper.calculateExplorationStats(blurryGridsList, preciseGridsList, json)
+                val stats = GeoJsonHelper.calculateExplorationStats(blurryGridsList, preciseGridsList, json)
                 stateExploredArea = stats.first
-                if (stats.second > 0) {
-                    stateProgress = stats.first / stats.second
-                }
+                if (stats.second > 0) stateProgress = stats.first / stats.second
+
                 if (currentStateName != unknownStr && currentStateName != context.getString(R.string.region_not_downloaded)) {
                     viewModel.recordRegionVisit(json, 3, currentStateName, stateExploredArea)
                 }
@@ -230,16 +203,12 @@ fun HomeScreen(viewModel: HomeViewModel) {
 
             currentCountryName = json.optString("name").takeIf { it.isNotEmpty() }
                 ?: addressObj?.optString("country")?.takeIf { it.isNotEmpty() }
-                        ?: json.optString("display_name", unknownStr).split(",").lastOrNull()
-                    ?.trim() ?: unknownStr
+                        ?: json.optString("display_name", unknownStr).split(",").lastOrNull()?.trim() ?: unknownStr
 
             withContext(Dispatchers.Default) {
-                val stats =
-                    GeoJsonHelper.calculateExplorationStats(blurryGridsList, preciseGridsList, json)
+                val stats = GeoJsonHelper.calculateExplorationStats(blurryGridsList, preciseGridsList, json)
                 countryExploredArea = stats.first
-                if (stats.second > 0) {
-                    countryProgress = stats.first / stats.second
-                }
+                if (stats.second > 0) countryProgress = stats.first / stats.second
 
                 if (currentCountryName != unknownStr && currentCountryName != context.getString(R.string.country_not_downloaded)) {
                     viewModel.recordRegionVisit(json, 4, currentCountryName, countryExploredArea)
@@ -260,44 +229,53 @@ fun HomeScreen(viewModel: HomeViewModel) {
                 TextButton(onClick = {
                     showDialog = false
                     isDownloading = true
-                    if (ContextCompat.checkSelfPermission(
-                            context,
-                            Manifest.permission.ACCESS_FINE_LOCATION
-                        ) == PackageManager.PERMISSION_GRANTED
-                    ) {
+                    if (ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
                         fusedLocationClient.lastLocation.addOnSuccessListener { location ->
                             if (location != null) {
                                 coroutineScope.launch {
-                                    cityGeoJson = GeoJsonHelper.downloadAndCacheBoundary(
-                                        context, location.latitude, location.longitude, 10, "city"
-                                    )
-                                    stateGeoJson = GeoJsonHelper.downloadAndCacheBoundary(
-                                        context, location.latitude, location.longitude, 5, "state"
-                                    )
-                                    countryGeoJson = GeoJsonHelper.downloadAndCacheBoundary(
-                                        context, location.latitude, location.longitude, 3, "country"
-                                    )
+                                    cityGeoJson = GeoJsonHelper.downloadAndCacheBoundary(context, location.latitude, location.longitude, 10, "city")
+                                    stateGeoJson = GeoJsonHelper.downloadAndCacheBoundary(context, location.latitude, location.longitude, 5, "state")
+                                    countryGeoJson = GeoJsonHelper.downloadAndCacheBoundary(context, location.latitude, location.longitude, 3, "country")
                                     isDownloading = false
                                     AppLogger.i("HomeScreen", "Manual boundary refresh completed")
                                 }
                             } else {
                                 isDownloading = false
-                                AppLogger.w("HomeScreen", "Manual boundary refresh failed because location was unavailable")
-                                Toast.makeText(context, toastLocUnavailable, Toast.LENGTH_SHORT)
-                                    .show()
+                                Toast.makeText(context, toastLocUnavailable, Toast.LENGTH_SHORT).show()
                             }
                         }
                     } else {
                         isDownloading = false
-                        AppLogger.w("HomeScreen", "Manual boundary refresh blocked because location permission was missing")
                         Toast.makeText(context, toastNeedLocPerm, Toast.LENGTH_SHORT).show()
                     }
                 }) { Text(stringResource(R.string.dialog_confirm)) }
             },
             dismissButton = {
-                TextButton(onClick = {
-                    showDialog = false
-                }) { Text(stringResource(R.string.dialog_cancel)) }
+                TextButton(onClick = { showDialog = false }) { Text(stringResource(R.string.dialog_cancel)) }
+            }
+        )
+    }
+
+    if (showTrackingInfoDialog) {
+        AlertDialog(
+            onDismissRequest = { showTrackingInfoDialog = false },
+            text = { Text(stringResource(R.string.tracking_switch_desc)) },
+            confirmButton = {
+                TextButton(onClick = { showTrackingInfoDialog = false }) {
+                    Text(stringResource(R.string.dialog_confirm))
+                }
+            }
+        )
+    }
+
+    if (showPreciseInfoDialog) {
+        AlertDialog(
+            onDismissRequest = { showPreciseInfoDialog = false },
+            text = { Text(if (isPreciseMode) stringResource(R.string.accuracy_precise_desc) else stringResource(R.string.accuracy_battery_desc)) },
+            confirmButton = {
+                TextButton(onClick = { showPreciseInfoDialog = false }) {
+                    Text(stringResource(R.string.dialog_confirm))
+                }
             }
         )
     }
@@ -305,32 +283,18 @@ fun HomeScreen(viewModel: HomeViewModel) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = {
-                    Text(
-                        stringResource(R.string.app_name_display),
-                        fontWeight = FontWeight.Bold
-                    )
-                },
+                title = { Text(stringResource(R.string.app_name_display), fontWeight = FontWeight.Bold) },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.background,
-                    scrolledContainerColor = Color.Unspecified,
-                    navigationIconContentColor = Color.Unspecified,
-                    titleContentColor = MaterialTheme.colorScheme.primary,
-                    actionIconContentColor = Color.Unspecified
+                    titleContentColor = MaterialTheme.colorScheme.primary
                 ),
                 windowInsets = WindowInsets(0.dp)
             )
         },
         floatingActionButton = {
             FloatingActionButton(onClick = { showDialog = true }) {
-                if (isDownloading) CircularProgressIndicator(
-                    modifier = Modifier.size(24.dp),
-                    strokeWidth = 2.dp
-                )
-                else Icon(
-                    Icons.Default.Refresh,
-                    contentDescription = stringResource(R.string.content_desc_update_boundary)
-                )
+                if (isDownloading) CircularProgressIndicator(modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
+                else Icon(Icons.Default.Refresh, contentDescription = stringResource(R.string.content_desc_update_boundary))
             }
         }
     ) { innerPadding ->
@@ -357,22 +321,28 @@ fun HomeScreen(viewModel: HomeViewModel) {
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Column {
+                    // 🌟 核心修改：横向排列标题与信息按钮
+                    Row(
+                        modifier = Modifier.weight(1f).padding(end = 16.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
                         Text(
-                            text = if (isTrackingEnabled) stringResource(R.string.tracking_active_title) else stringResource(
-                                R.string.tracking_paused_title
-                            ),
+                            text = if (isTrackingEnabled) stringResource(R.string.tracking_active_title) else stringResource(R.string.tracking_paused_title),
                             style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.Bold,
                             color = if (isTrackingEnabled) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant
                         )
-                        Text(
-                            text = stringResource(R.string.tracking_switch_desc),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = if (isTrackingEnabled) MaterialTheme.colorScheme.onPrimaryContainer.copy(
-                                alpha = 0.8f
-                            ) else MaterialTheme.colorScheme.onSurfaceVariant
-                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        IconButton(
+                            onClick = { showTrackingInfoDialog = true },
+                            modifier = Modifier.size(24.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Info,
+                                contentDescription = "Info",
+                                tint = if (isTrackingEnabled) MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f) else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                            )
+                        }
                     }
                     Switch(
                         checked = isTrackingEnabled,
@@ -385,21 +355,12 @@ fun HomeScreen(viewModel: HomeViewModel) {
                                 permissionsToRequest.add(Manifest.permission.POST_NOTIFICATIONS)
                                 permissionsToRequest.add(Manifest.permission.ACTIVITY_RECOGNITION)
 
-                                val hasLocationPermission = ContextCompat.checkSelfPermission(
-                                    context,
-                                    Manifest.permission.ACCESS_FINE_LOCATION
-                                ) == PackageManager.PERMISSION_GRANTED ||
-                                        ContextCompat.checkSelfPermission(
-                                            context,
-                                            Manifest.permission.ACCESS_COARSE_LOCATION
-                                        ) == PackageManager.PERMISSION_GRANTED
+                                val hasLocationPermission = ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED ||
+                                        ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED
 
                                 if (hasLocationPermission) {
                                     viewModel.toggleTracking(true)
-                                    val serviceIntent = Intent(
-                                        context,
-                                        LocationTrackingService::class.java
-                                    ).apply { putExtra("EXTRA_IS_PRECISE", isPreciseMode) }
+                                    val serviceIntent = Intent(context, LocationTrackingService::class.java).apply { putExtra("EXTRA_IS_PRECISE", isPreciseMode) }
                                     ContextCompat.startForegroundService(context, serviceIntent)
                                     AppLogger.i("HomeScreen", "Tracking enabled from home screen switch")
                                 } else {
@@ -408,12 +369,7 @@ fun HomeScreen(viewModel: HomeViewModel) {
                             } else {
                                 viewModel.toggleTracking(false)
                                 AppLogger.i("HomeScreen", "Tracking disabled from home screen switch")
-                                context.stopService(
-                                    Intent(
-                                        context,
-                                        LocationTrackingService::class.java
-                                    )
-                                )
+                                context.stopService(Intent(context, LocationTrackingService::class.java))
                             }
                         }
                     )
@@ -423,9 +379,7 @@ fun HomeScreen(viewModel: HomeViewModel) {
             OutlinedCard(
                 modifier = Modifier.fillMaxWidth(),
                 colors = CardDefaults.outlinedCardColors(
-                    containerColor = if (isTrackingEnabled) MaterialTheme.colorScheme.surface else MaterialTheme.colorScheme.surface.copy(
-                        alpha = 0.5f
-                    )
+                    containerColor = if (isTrackingEnabled) MaterialTheme.colorScheme.surface else MaterialTheme.colorScheme.surface.copy(alpha = 0.5f)
                 )
             ) {
                 Row(
@@ -435,28 +389,33 @@ fun HomeScreen(viewModel: HomeViewModel) {
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Column {
+                    // 🌟 保持一致性：横向排列精度模式标题与信息按钮
+                    Row(
+                        modifier = Modifier.weight(1f).padding(end = 16.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
                         Text(
                             stringResource(R.string.accuracy_setting_title),
                             style = MaterialTheme.typography.titleMedium
                         )
-                        Text(
-                            text = if (isPreciseMode) stringResource(R.string.accuracy_precise_desc) else stringResource(
-                                R.string.accuracy_battery_desc
-                            ),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        IconButton(
+                            onClick = { showPreciseInfoDialog = true },
+                            modifier = Modifier.size(20.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Info,
+                                contentDescription = "Info",
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                            )
+                        }
                     }
                     Switch(
                         checked = isPreciseMode,
                         onCheckedChange = { isChecked ->
                             viewModel.setPreciseMode(isChecked)
                             if (isTrackingEnabled) {
-                                val serviceIntent =
-                                    Intent(context, LocationTrackingService::class.java).apply {
-                                        putExtra("EXTRA_IS_PRECISE", isChecked)
-                                    }
+                                val serviceIntent = Intent(context, LocationTrackingService::class.java).apply { putExtra("EXTRA_IS_PRECISE", isChecked) }
                                 ContextCompat.startForegroundService(context, serviceIntent)
                             }
                             AppLogger.i("HomeScreen", "Precision mode switch changed: enabled=$isChecked")
@@ -465,24 +424,9 @@ fun HomeScreen(viewModel: HomeViewModel) {
                 }
             }
 
-            AreaProgressCard(
-                stringResource(R.string.progress_city_title),
-                currentCityName,
-                cityExploredArea,
-                cityProgress
-            )
-            AreaProgressCard(
-                stringResource(R.string.progress_state_title),
-                currentStateName,
-                stateExploredArea,
-                stateProgress
-            )
-            AreaProgressCard(
-                stringResource(R.string.progress_country_title),
-                currentCountryName,
-                countryExploredArea,
-                countryProgress
-            )
+            AreaProgressCard(stringResource(R.string.progress_city_title), currentCityName, cityExploredArea, cityProgress)
+            AreaProgressCard(stringResource(R.string.progress_state_title), currentStateName, stateExploredArea, stateProgress)
+            AreaProgressCard(stringResource(R.string.progress_country_title), currentCountryName, countryExploredArea, countryProgress)
 
             OutlinedCard(
                 modifier = Modifier.fillMaxWidth(),

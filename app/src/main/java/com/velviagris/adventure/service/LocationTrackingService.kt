@@ -90,7 +90,13 @@ class LocationTrackingService : Service() {
         val intent = Intent(ACTION_ACTIVITY_UPDATE).apply {
             setPackage(packageName)
         }
-        val pendingIntentFlags = PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+
+        val pendingIntentFlags = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_MUTABLE
+        } else {
+            PendingIntent.FLAG_UPDATE_CURRENT
+        }
+
         activityPendingIntent = PendingIntent.getBroadcast(this, 0, intent, pendingIntentFlags)
 
         locationCallback = object : LocationCallback() {
