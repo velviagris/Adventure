@@ -20,6 +20,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import com.google.android.gms.location.LocationServices
@@ -33,7 +34,10 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
 
-@OptIn(ExperimentalMaterial3Api::class)
+// ==========================================
+// 有状态容器 (Stateful Wrapper)
+// 负责所有与 ViewModel、权限、服务、Context 相关的重量级操作
+// ==========================================
 @Composable
 fun HomeScreen(viewModel: HomeViewModel) {
     val context = LocalContext.current
@@ -70,11 +74,10 @@ fun HomeScreen(viewModel: HomeViewModel) {
     var showDialog by remember { mutableStateOf(false) }
     var isDownloading by remember { mutableStateOf(false) }
 
-    var showTrackingInfoDialog by remember { mutableStateOf(false) }
-    var showPreciseInfoDialog by remember { mutableStateOf(false) }
-
     val toastTrackingStarted = stringResource(R.string.toast_tracking_started)
     val toastPermissionRequired = stringResource(R.string.toast_permission_required)
+    val toastLocUnavailable = stringResource(R.string.toast_location_unavailable)
+    val toastNeedLocPerm = stringResource(R.string.toast_need_location_permission)
 
     val permissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestMultiplePermissions()
@@ -217,41 +220,125 @@ fun HomeScreen(viewModel: HomeViewModel) {
         }
     }
 
-    val toastLocUnavailable = stringResource(R.string.toast_location_unavailable)
-    val toastNeedLocPerm = stringResource(R.string.toast_need_location_permission)
-
-    if (showDialog) {
-        AlertDialog(
-            onDismissRequest = { showDialog = false },
-            title = { Text(stringResource(R.string.dialog_download_title)) },
-            text = { Text(stringResource(R.string.dialog_download_message)) },
-            confirmButton = {
-                TextButton(onClick = {
-                    showDialog = false
-                    isDownloading = true
-                    if (ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
-                        fusedLocationClient.lastLocation.addOnSuccessListener { location ->
-                            if (location != null) {
-                                coroutineScope.launch {
-                                    cityGeoJson = GeoJsonHelper.downloadAndCacheBoundary(context, location.latitude, location.longitude, 10, "city")
-                                    stateGeoJson = GeoJsonHelper.downloadAndCacheBoundary(context, location.latitude, location.longitude, 5, "state")
-                                    countryGeoJson = GeoJsonHelper.downloadAndCacheBoundary(context, location.latitude, location.longitude, 3, "country")
-                                    isDownloading = false
-                                    AppLogger.i("HomeScreen", "Manual boundary refresh completed")
-                                }
-                            } else {
-                                isDownloading = false
-                                Toast.makeText(context, toastLocUnavailable, Toast.LENGTH_SHORT).show()
-                            }
+    // 将内部的复杂逻辑转化为传递给纯净 UI 的回调函数
+    HomeScreenContent(
+        isTrackingEnabled = isTrackingEnabled,
+        isPreciseMode = isPreciseMode,
+        globalExploredAreaKm2 = globalExploredAreaKm2,
+        currentCityName = currentCityName,
+        cityExploredArea = cityExploredArea,
+        cityProgress = cityProgress,
+        currentStateName = currentStateName,
+        stateExploredArea = stateExploredArea,
+        stateProgress = stateProgress,
+        currentCountryName = currentCountryName,
+        countryExploredArea = countryExploredArea,
+        countryProgress = countryProgress,
+        isDownloading = isDownloading,
+        showRefreshDialog = showDialog,
+        onShowRefreshDialogChange = { showDialog = it },
+        onConfirmRefresh = {
+            showDialog = false
+            isDownloading = true
+            if (ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+                fusedLocationClient.lastLocation.addOnSuccessListener { location ->
+                    if (location != null) {
+                        coroutineScope.launch {
+                            cityGeoJson = GeoJsonHelper.downloadAndCacheBoundary(context, location.latitude, location.longitude, 10, "city")
+                            stateGeoJson = GeoJsonHelper.downloadAndCacheBoundary(context, location.latitude, location.longitude, 5, "state")
+                            countryGeoJson = GeoJsonHelper.downloadAndCacheBoundary(context, location.latitude, location.longitude, 3, "country")
+                            isDownloading = false
+                            AppLogger.i("HomeScreen", "Manual boundary refresh completed")
                         }
                     } else {
                         isDownloading = false
-                        Toast.makeText(context, toastNeedLocPerm, Toast.LENGTH_SHORT).show()
+                        Toast.makeText(context, toastLocUnavailable, Toast.LENGTH_SHORT).show()
                     }
-                }) { Text(stringResource(R.string.dialog_confirm)) }
+                }
+            } else {
+                isDownloading = false
+                Toast.makeText(context, toastNeedLocPerm, Toast.LENGTH_SHORT).show()
+            }
+        },
+        onTrackingToggleRequest = { isChecked ->
+            if (isChecked) {
+                val permissionsToRequest = mutableListOf(
+                    Manifest.permission.ACCESS_FINE_LOCATION,
+                    Manifest.permission.ACCESS_COARSE_LOCATION
+                )
+                permissionsToRequest.add(Manifest.permission.POST_NOTIFICATIONS)
+                permissionsToRequest.add(Manifest.permission.ACTIVITY_RECOGNITION)
+
+                val hasLocationPermission = ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED ||
+                        ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED
+
+                if (hasLocationPermission) {
+                    viewModel.toggleTracking(true)
+                    val serviceIntent = Intent(context, LocationTrackingService::class.java).apply { putExtra("EXTRA_IS_PRECISE", isPreciseMode) }
+                    ContextCompat.startForegroundService(context, serviceIntent)
+                    AppLogger.i("HomeScreen", "Tracking enabled from home screen switch")
+                } else {
+                    permissionLauncher.launch(permissionsToRequest.toTypedArray())
+                }
+            } else {
+                viewModel.toggleTracking(false)
+                AppLogger.i("HomeScreen", "Tracking disabled from home screen switch")
+                context.stopService(Intent(context, LocationTrackingService::class.java))
+            }
+        },
+        onPreciseModeToggleRequest = { isChecked ->
+            viewModel.setPreciseMode(isChecked)
+            if (isTrackingEnabled) {
+                val serviceIntent = Intent(context, LocationTrackingService::class.java).apply { putExtra("EXTRA_IS_PRECISE", isChecked) }
+                ContextCompat.startForegroundService(context, serviceIntent)
+            }
+            AppLogger.i("HomeScreen", "Precision mode switch changed: enabled=$isChecked")
+        }
+    )
+}
+
+// ==========================================
+// 无状态核心 UI 界面 (Stateless UI)
+// 只有基本的纯参数传入，完全与 ViewModel 解耦，完美支持 @Preview
+// ==========================================
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun HomeScreenContent(
+    isTrackingEnabled: Boolean,
+    isPreciseMode: Boolean,
+    globalExploredAreaKm2: Double,
+    currentCityName: String,
+    cityExploredArea: Double,
+    cityProgress: Double?,
+    currentStateName: String,
+    stateExploredArea: Double,
+    stateProgress: Double?,
+    currentCountryName: String,
+    countryExploredArea: Double,
+    countryProgress: Double?,
+    isDownloading: Boolean,
+    showRefreshDialog: Boolean,
+    onShowRefreshDialogChange: (Boolean) -> Unit,
+    onConfirmRefresh: () -> Unit,
+    onTrackingToggleRequest: (Boolean) -> Unit,
+    onPreciseModeToggleRequest: (Boolean) -> Unit
+) {
+    var showTrackingInfoDialog by remember { mutableStateOf(false) }
+    var showPreciseInfoDialog by remember { mutableStateOf(false) }
+
+    // ==========================================
+    // 弹窗声明区域
+    // ==========================================
+    if (showRefreshDialog) {
+        AlertDialog(
+            onDismissRequest = { onShowRefreshDialogChange(false) },
+            title = { Text(stringResource(R.string.dialog_download_title)) },
+            text = { Text(stringResource(R.string.dialog_download_message)) },
+            confirmButton = {
+                TextButton(onClick = onConfirmRefresh) { Text(stringResource(R.string.dialog_confirm)) }
             },
             dismissButton = {
-                TextButton(onClick = { showDialog = false }) { Text(stringResource(R.string.dialog_cancel)) }
+                TextButton(onClick = { onShowRefreshDialogChange(false) }) { Text(stringResource(R.string.dialog_cancel)) }
             }
         )
     }
@@ -261,9 +348,7 @@ fun HomeScreen(viewModel: HomeViewModel) {
             onDismissRequest = { showTrackingInfoDialog = false },
             text = { Text(stringResource(R.string.tracking_switch_desc)) },
             confirmButton = {
-                TextButton(onClick = { showTrackingInfoDialog = false }) {
-                    Text(stringResource(R.string.dialog_confirm))
-                }
+                TextButton(onClick = { showTrackingInfoDialog = false }) { Text(stringResource(R.string.dialog_confirm)) }
             }
         )
     }
@@ -273,9 +358,7 @@ fun HomeScreen(viewModel: HomeViewModel) {
             onDismissRequest = { showPreciseInfoDialog = false },
             text = { Text(if (isPreciseMode) stringResource(R.string.accuracy_precise_desc) else stringResource(R.string.accuracy_battery_desc)) },
             confirmButton = {
-                TextButton(onClick = { showPreciseInfoDialog = false }) {
-                    Text(stringResource(R.string.dialog_confirm))
-                }
+                TextButton(onClick = { showPreciseInfoDialog = false }) { Text(stringResource(R.string.dialog_confirm)) }
             }
         )
     }
@@ -292,7 +375,7 @@ fun HomeScreen(viewModel: HomeViewModel) {
             )
         },
         floatingActionButton = {
-            FloatingActionButton(onClick = { showDialog = true }) {
+            FloatingActionButton(onClick = { onShowRefreshDialogChange(true) }) {
                 if (isDownloading) CircularProgressIndicator(modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
                 else Icon(Icons.Default.Refresh, contentDescription = stringResource(R.string.content_desc_update_boundary))
             }
@@ -321,7 +404,6 @@ fun HomeScreen(viewModel: HomeViewModel) {
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    // 🌟 核心修改：横向排列标题与信息按钮
                     Row(
                         modifier = Modifier.weight(1f).padding(end = 16.dp),
                         verticalAlignment = Alignment.CenterVertically
@@ -346,32 +428,7 @@ fun HomeScreen(viewModel: HomeViewModel) {
                     }
                     Switch(
                         checked = isTrackingEnabled,
-                        onCheckedChange = { isChecked ->
-                            if (isChecked) {
-                                val permissionsToRequest = mutableListOf(
-                                    Manifest.permission.ACCESS_FINE_LOCATION,
-                                    Manifest.permission.ACCESS_COARSE_LOCATION
-                                )
-                                permissionsToRequest.add(Manifest.permission.POST_NOTIFICATIONS)
-                                permissionsToRequest.add(Manifest.permission.ACTIVITY_RECOGNITION)
-
-                                val hasLocationPermission = ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED ||
-                                        ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED
-
-                                if (hasLocationPermission) {
-                                    viewModel.toggleTracking(true)
-                                    val serviceIntent = Intent(context, LocationTrackingService::class.java).apply { putExtra("EXTRA_IS_PRECISE", isPreciseMode) }
-                                    ContextCompat.startForegroundService(context, serviceIntent)
-                                    AppLogger.i("HomeScreen", "Tracking enabled from home screen switch")
-                                } else {
-                                    permissionLauncher.launch(permissionsToRequest.toTypedArray())
-                                }
-                            } else {
-                                viewModel.toggleTracking(false)
-                                AppLogger.i("HomeScreen", "Tracking disabled from home screen switch")
-                                context.stopService(Intent(context, LocationTrackingService::class.java))
-                            }
-                        }
+                        onCheckedChange = onTrackingToggleRequest
                     )
                 }
             }
@@ -382,16 +439,12 @@ fun HomeScreen(viewModel: HomeViewModel) {
                     containerColor = if (isTrackingEnabled) MaterialTheme.colorScheme.surface else MaterialTheme.colorScheme.surface.copy(alpha = 0.5f)
                 )
             ) {
-                Row(
+                Column(
                     modifier = Modifier
                         .padding(16.dp)
-                        .fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
+                        .fillMaxWidth()
                 ) {
-                    // 🌟 保持一致性：横向排列精度模式标题与信息按钮
                     Row(
-                        modifier = Modifier.weight(1f).padding(end = 16.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
@@ -410,17 +463,27 @@ fun HomeScreen(viewModel: HomeViewModel) {
                             )
                         }
                     }
-                    Switch(
-                        checked = isPreciseMode,
-                        onCheckedChange = { isChecked ->
-                            viewModel.setPreciseMode(isChecked)
-                            if (isTrackingEnabled) {
-                                val serviceIntent = Intent(context, LocationTrackingService::class.java).apply { putExtra("EXTRA_IS_PRECISE", isChecked) }
-                                ContextCompat.startForegroundService(context, serviceIntent)
-                            }
-                            AppLogger.i("HomeScreen", "Precision mode switch changed: enabled=$isChecked")
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    SingleChoiceSegmentedButtonRow(
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        SegmentedButton(
+                            selected = !isPreciseMode, // 省电模式 (false)
+                            onClick = { onPreciseModeToggleRequest(false) },
+                            shape = SegmentedButtonDefaults.itemShape(index = 0, count = 2)
+                        ) {
+                            Text(stringResource(R.string.mode_battery))
                         }
-                    )
+                        SegmentedButton(
+                            selected = isPreciseMode, // 高精度模式 (true)
+                            onClick = { onPreciseModeToggleRequest(true) },
+                            shape = SegmentedButtonDefaults.itemShape(index = 1, count = 2)
+                        ) {
+                            Text(stringResource(R.string.mode_precise))
+                        }
+                    }
                 }
             }
 
@@ -488,6 +551,7 @@ fun HomeScreen(viewModel: HomeViewModel) {
     }
 }
 
+// 保持不变，它本来就是纯 UI 组件
 @Composable
 fun AreaProgressCard(
     title: String,
@@ -553,5 +617,64 @@ fun AreaProgressCard(
                 }
             }
         }
+    }
+}
+
+
+// ==========================================
+// @Preview 预览区域
+// ==========================================
+
+@Preview(name = "首页预览 - 中文", locale = "zh", showBackground = true)
+@Composable
+fun HomeScreenPreviewZh() {
+    MaterialTheme {
+        HomeScreenContent(
+            isTrackingEnabled = true,
+            isPreciseMode = true,
+            globalExploredAreaKm2 = 23.45,
+            currentCityName = "广州市",
+            cityExploredArea = 12.5,
+            cityProgress = 0.05,
+            currentStateName = "广东省",
+            stateExploredArea = 20.1,
+            stateProgress = 0.001,
+            currentCountryName = "中国",
+            countryExploredArea = 23.45,
+            countryProgress = 0.000002,
+            isDownloading = false,
+            showRefreshDialog = false,
+            onShowRefreshDialogChange = {},
+            onConfirmRefresh = {},
+            onTrackingToggleRequest = {},
+            onPreciseModeToggleRequest = {}
+        )
+    }
+}
+
+@Preview(name = "首页预览 - English", locale = "en", showBackground = true)
+@Composable
+fun HomeScreenPreviewEn() {
+    MaterialTheme {
+        HomeScreenContent(
+            isTrackingEnabled = false,
+            isPreciseMode = false,
+            globalExploredAreaKm2 = 1234.56,
+            currentCityName = "New York City",
+            cityExploredArea = 50.0,
+            cityProgress = 0.06,
+            currentStateName = "New York",
+            stateExploredArea = 120.0,
+            stateProgress = 0.008,
+            currentCountryName = "United States",
+            countryExploredArea = 1234.56,
+            countryProgress = 0.0001,
+            isDownloading = false,
+            showRefreshDialog = false,
+            onShowRefreshDialogChange = {},
+            onConfirmRefresh = {},
+            onTrackingToggleRequest = {},
+            onPreciseModeToggleRequest = {}
+        )
     }
 }
