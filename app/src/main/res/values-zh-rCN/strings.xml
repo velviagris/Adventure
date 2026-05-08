@@ -77,6 +77,8 @@
     <string name="settings_notifications">消息提醒</string>
     <string name="settings_summary_title">每日探索总结</string>
     <string name="settings_summary_desc">每天晚上 21 点推送今日的探索成就</string>
+    <string name="settings_about">关于</string>
+    <string name="settings_github">开源仓库 (GitHub)</string>
 
     <string name="summary_channel_name">每日总结</string>
     <string name="summary_channel_desc">每日探索面积报告</string>

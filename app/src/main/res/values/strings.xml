@@ -77,6 +77,8 @@
     <string name="settings_notifications">Notifications</string>
     <string name="settings_summary_title">Daily Summary</string>
     <string name="settings_summary_desc">Receive exploration summary at 21:00 daily</string>
+    <string name="settings_about">About</string>
+    <string name="settings_github">Source Code (GitHub)</string>
 
     <string name="summary_channel_name">Daily Summary</string>
     <string name="summary_channel_desc">Daily exploration report</string>
