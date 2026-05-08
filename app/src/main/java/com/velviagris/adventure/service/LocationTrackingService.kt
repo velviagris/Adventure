@@ -84,11 +84,12 @@ class LocationTrackingService : Service() {
         createNotificationChannel()
 
         val intentFilter = IntentFilter(ACTION_ACTIVITY_UPDATE)
-        val flags = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) ContextCompat.RECEIVER_NOT_EXPORTED else 0
+
+        val flags = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) ContextCompat.RECEIVER_EXPORTED else 0
         ContextCompat.registerReceiver(this, activityReceiver, intentFilter, flags)
 
         val intent = Intent(ACTION_ACTIVITY_UPDATE).apply {
-            setPackage(packageName)
+            setPackage(packageName) // 限制只有本应用能处理，保证安全性
         }
 
         val pendingIntentFlags = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
@@ -240,9 +241,10 @@ class LocationTrackingService : Service() {
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACTIVITY_RECOGNITION) == PackageManager.PERMISSION_GRANTED ||
             Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
             try {
-                // 每30秒请求一次活动识别更新
+                activityRecognitionClient.removeActivityUpdates(activityPendingIntent)
+
                 activityRecognitionClient.requestActivityUpdates(30000L, activityPendingIntent)
-                AppLogger.i("LocationTrackingService", "Activity recognition updates requested")
+                AppLogger.i("LocationTrackingService", "Activity recognition updates requested successfully")
             } catch (e: SecurityException) {
                 AppLogger.e("LocationTrackingService", "Failed to request activity updates", e)
             }
