@@ -39,6 +39,30 @@ android {
             versionNameSuffix = "-DEBUG"
         }
     }
+    applicationVariants.all {
+        val variant = this
+        variant.outputs.all {
+            val output = this as com.android.build.gradle.internal.api.BaseVariantOutputImpl
+
+            // 获取 App 名称 (可以在 gradle.properties 中定义 appName=MyApp)
+            val appName = "Adventure"
+
+            // 获取版本号和版本名称
+            val versionName = variant.versionName
+
+            // 获取构建类型 (release 或 debug)
+            val buildType = variant.buildType.name
+
+            // 根据构建类型动态设置文件名
+            val newName = if (buildType == "debug") {
+                "${appName}-${versionName}-android-arm64-v8a-DEBUG.apk"
+            } else {
+                "${appName}-${versionName}-android-arm64-v8a.apk"
+            }
+
+            output.outputFileName = newName
+        }
+    }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
